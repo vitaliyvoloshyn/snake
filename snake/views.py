@@ -7,7 +7,10 @@ class View:
     body = 'testing page'
     context: dict = {}
 
-    def get(self, request: Request, *args, **kwargs) -> Response:
+    def get(self, request: Request = None, *args, **kwargs) -> Response:
+        return ResponseHTML(status_code=self.status_code, body=self.body, context=self.get_context())
+
+    def post(self, request: Request = None, *args, **kwargs) -> Response:
         return ResponseHTML(status_code=self.status_code, body=self.body, context=self.get_context())
 
     def get_context(self) -> dict:
@@ -27,5 +30,8 @@ class NotAllowed405View(View):
 class TemplateView(View):
     template_name = ''
 
-    def get(self, request: Request, *args, **kwargs) -> Response:
+    def get(self, request: Request = None, *args, **kwargs) -> Response:
+        return ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=self.get_context())
+
+    def post(self, request: Request = None, *args, **kwargs) -> Response:
         return ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=self.get_context())

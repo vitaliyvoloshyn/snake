@@ -10,12 +10,13 @@ from snake.views import View
 
 
 class Snake:
-    __slots__ = ('urls', 'view', 'request', 'response', 'static_files')
+    __slots__ = ('urls', 'view', 'request', 'response', 'static_files', 'input_post_data')
 
     def __init__(self, urls: List[Url]):
         self.urls = urls
 
     def __call__(self, environ: dict, start_response):
+
         # сначала проверяем запрос. Если запрос на статику, то формируем ответ и отдаем файл
         request_static_file = StaticFiles().get_static_file(self._get_filename_from_url(environ.get('PATH_INFO')))
         if request_static_file:
