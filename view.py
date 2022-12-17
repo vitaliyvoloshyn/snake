@@ -4,13 +4,12 @@ from snake.views import TemplateView
 
 
 class HomePageView(TemplateView):
-    template_name = 'home.html'
+    template_name = 'index.html'
 
     def get_context(self) -> dict:
-        context = {'current_time': datetime.now().strftime('%Y.%m.%d %H:%M:%S'),
-                   'name': 'Ваше Величество'}
+        context = {'cur_time': datetime.now().strftime('%Y.%m.%d %H:%M:%S')}
         return context
 
 
-class AboutPageView(TemplateView):
-    template_name = 'about.html'
+class DeveloperPageView(TemplateView):
+    template_name = 'developer.html'
