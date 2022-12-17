@@ -1,4 +1,5 @@
 from jinja2 import Environment, FileSystemLoader
+
 from settings import TEMPLATE_DIR_NAME
 
 
@@ -11,6 +12,6 @@ class Templator:
     def _get_template(self):
         self.template = self.env.get_template(self.template_name)
 
-    def render(self, context: dict):
+    def render(self, context: dict) -> str:
         self._get_template()
         return self.template.render(context)
