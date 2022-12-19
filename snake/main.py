@@ -1,3 +1,4 @@
+import pprint
 from typing import List, Type
 
 from snake.exeptions import NotFound, NotAllowed
@@ -16,7 +17,7 @@ class Snake:
         self.urls = urls
 
     def __call__(self, environ: dict, start_response):
-
+        # pprint.pprint(environ)
         # сначала проверяем запрос. Если запрос на статику, то формируем ответ и отдаем файл
         request_static_file = StaticFiles().get_static_file(self._get_filename_from_url(environ.get('PATH_INFO')))
         if request_static_file:
@@ -24,6 +25,7 @@ class Snake:
         else:
             # если запрос на HTML, то тянем представление, вытаскиваем query_string, формируем ответ и отдаем данные
             self.view = self._get_view(environ)
+            self.view.context = {'url': f'{environ["wsgi.url_scheme"]}://{environ["HTTP_HOST"]}'} # формируем контекст для базового класса View
             self.request = self._get_request(environ)
             self.response = self._get_response(environ, self.view, self.request)
         start_response(str(self.response.status_code), list(self.response.headers.items()))
