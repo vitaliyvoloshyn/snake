@@ -1,8 +1,11 @@
 from datetime import datetime
 
+from patterns.creational_patterns import Engine, Category
 from snake.request import Request
-from snake.response import Response
+from snake.response import Response, ResponseHTML
 from snake.views import TemplateView
+
+site = Engine()
 
 
 class HomePageView(TemplateView):
@@ -11,6 +14,29 @@ class HomePageView(TemplateView):
     def get_context(self) -> dict:
         context = {'cur_time': datetime.now().strftime('%Y.%m.%d %H:%M:%S')}
         return context
+
+
+class LearnCookPageView(TemplateView):
+    template_name = 'learn_cooking.html'
+
+    def get_context(self) -> dict:
+        context = {'category': site.categories}
+        return context
+
+
+class DetailCategoryView(TemplateView):
+    template_name = 'detail_category.html'
+
+    def get(self, request: Request = None, *args, **kwargs) -> Response:
+        id_ = request.GET.get('id')
+        if id_ is None:
+            raise Exception('Не указан id категории')
+        object = site.find_category_by_id(int(id_[0]))
+        context = self.get_context(object)
+        return ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=context)
+
+    def get_context(self, category: Category) -> dict:
+        return {'object': category}
 
 
 class DeveloperPageView(TemplateView):

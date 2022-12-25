@@ -57,7 +57,7 @@ class ResponseStatic(Response):
 
 
 class ResponseHTML(Response):
-    headers = {'Content-Type': 'text/html; charset=utf-8'}
+    headers_ = {'Content-Type': 'text/html; charset=utf-8'}
 
     def __init__(self,
                  status_code: str,
@@ -73,7 +73,7 @@ class ResponseHTML(Response):
             self._set_body(self._get_template_as_string(template_name, context))
         else:
             self._set_body(body)
-        self._update_headers(self.headers)
+        self._update_headers(self.headers_)
 
     @staticmethod
     def _get_template_as_string(template_name: str, context: dict):

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section style="list-style-type: none;">
+    <h1>Наши курсы и мастер-классы</h1>
+
+    {% for cat in category %}
+    <div class="card" style="width: 18rem;">
+        <img class="card-img-top" src="{{ cat.path_img }}" alt="Card image cap">
+        <div class="card-body">
+            <h5 class="card-title">{{ cat.name }}</h5>
+            <p class="card-text">Курсов в данной категории: {{ cat.course_count() }}</p>
+            <a href="{{ url }}/learncook/category?id={{ cat.id }}" class="btn btn-primary">Список курсов</a>
+        </div>
+    </div>
+    {% endfor %}
+
+</section>
+{% endblock %}
