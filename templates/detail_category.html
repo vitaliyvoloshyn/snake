@@ -2,6 +2,32 @@
 
 {% block content %}
 <section id="about" class="tm-section">
-    {{ object.name }}
+    <p>Категория:</p>
+    <h1 style="margin-bottom: 5rem;">{{ category.name }}</h1>
+    <form action="" method="post">
+        <p><label for="course_name">Добавить курс</label></p>
+        <div style="margin-bottom: 5rem;">
+            <input type="hidden" name="operation" value="create_course">
+            <input type="hidden" name="category_id" value="{{ category.id }}">
+            <input type="text" id="course_name" name="course_name">
+            <select name="course_type" size="1">
+                {% for course_type in courses_types %}
+                <option selected value="{{ course_type }}">{{ course_type }}</option>
+                {% endfor %}
+            </select>
+            <input type="submit" value="Добавить">
+        </div>
+    </form>
+    <p>Список доступных курсов:</p>
+    {% for course in category.courses %}
+    <p><strong style="color: #ff6600;">{{ course.name }}</strong> формат: <strong>{{ course }}</strong>
+    <form action="" method="post">
+    <input type="hidden" name="operation" value="clone_course">
+    <input type="hidden" name="category_id" value="{{ category.id }}">
+    <input type="hidden" name="course_name" value="{{ course.name }}">
+    <input type="submit" value="Копировать курс">
+    </form>
+    </p>
+    {% endfor %}
 </section>
 {% endblock %}

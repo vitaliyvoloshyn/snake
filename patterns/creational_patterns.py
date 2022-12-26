@@ -1,32 +1,67 @@
 from copy import deepcopy
-from quopri import decodestring
+from dataclasses import dataclass
+from typing import List
 
 
-class IUser:
-    """Абстрактный пользователь"""
-    pass
+class CourseCopy:
+
+    def clone(self):
+        copy_course = deepcopy(self)
+        return copy_course
 
 
-class Teacher(IUser):
-    """Пользователь"""
-    pass
 
+class Course(CourseCopy):
+    auto_id = 0
+    """Интерфейс для создания курсов"""
 
-class Student(IUser):
-    """Студент"""
-    pass
+    def __init__(self, name: str):
+        self.name = name
+        self.id = self.get_id()
 
+    def __repr__(self):
+        return self.name
 
-class UserFactory:
-    types = {
-        'student': Student,
-        'teacher': Teacher
-    }
-
-    # порождающий паттерн Фабричный метод
     @classmethod
-    def create(cls, type_):
-        return cls.types[type_]()
+    def get_id(cls) -> int:
+        """возвращает id для новосозданного курса"""
+        cls.auto_id += 1
+        return cls.auto_id
+
+
+class RecordCourse(Course):
+    """класс курса в записи"""
+    def __str__(self):
+        return 'В записи'
+
+
+class OnlineCourse(Course):
+    """класс курса в записи"""
+
+    def __str__(self):
+        return 'Онлайн'
+
+
+class LiveCourse(Course):
+    """класс курса вживую"""
+
+    def __str__(self):
+        return 'Вживую'
+
+
+@dataclass
+class CoursesTypes:
+    online: Course = OnlineCourse
+    record: Course = RecordCourse
+    live: Course = LiveCourse
+
+
+class CourseFactory:
+
+    @staticmethod
+    def create(type_: Course, name: str) -> Course:
+        """Фабричный метод"""
+        return type_(name)
 
 
 class Category:
@@ -48,6 +83,20 @@ class Category:
         cls.auto_id += 1
         return cls.auto_id
 
+    def create_course(self, type_: Course, name: str) -> Course:
+        course = CourseFactory.create(type_, name)
+        self._add_course_to_list(course)
+        return course
+
+    def clone_course(self, course_name: str):
+        course: Course = list(filter(lambda x: x.name == course_name, self.courses))
+        self._add_course_to_list(course[0].clone())
+
+
+    def _add_course_to_list(self, course: Course):
+        """Добавить новый курс к списку курсов"""
+        self.courses.append(course)
+
     def __repr__(self):
         return self.name
 
@@ -63,19 +112,13 @@ class Engine:
     def __init__(self):
         self.teachers = []
         self.students = []
-        self.courses = []
-        self.categories = []
+        self.categories: List[Category] = []
         self.create_start_categories()
 
     def create_start_categories(self):
         for cat in Engine.start_categories:
             self.create_category(cat[0], cat[1])
 
-    @staticmethod
-    def create_user(type_):
-        return UserFactory.create(type_)
-
-    # @staticmethod
     def create_category(self, name: str, path_img: str = ''):
         category_obj = Category(name, path_img)
         self.categories.append(category_obj)
@@ -86,24 +129,9 @@ class Engine:
                 return item
         raise Exception(f'Нет категории с id = {id}')
 
-    # @staticmethod
-    # def create_course(type_, name, category):
-    #     return CourseFactory.create(type_, name, category)
-
-    def get_course(self, name):
-        for item in self.courses:
-            if item.name == name:
-                return item
-        return None
-
-    @staticmethod
-    def decode_value(val):
-        val_b = bytes(val.replace('%', '=').replace("+", " "), 'UTF-8')
-        val_decode_str = decodestring(val_b)
-        return val_decode_str.decode('UTF-8')
-
 
 if __name__ == '__main__':
-    a = Engine()
-    print(a.categories)
-    print(a.categories[0].course_count())
+    a=Engine()
+    a.categories[0].create_course(CoursesTypes.online, 'pizza')
+    a.categories[0].clone_course('pizza')
+    print(type(list(CoursesTypes().__dict__.keys())[0]))

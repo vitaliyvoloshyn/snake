@@ -2,6 +2,17 @@
 
 {% block content %}
 <section style="list-style-type: none;">
+
+    <form action="" method="post">
+        <p><label for="cat_name">Добавить категорию</label></p>
+        <div style="margin-bottom: 5rem;">
+            <input type="text" id="cat_name" name="category">
+            <input type="submit" value="Добавить">
+        </div>
+
+    </form>
+</section>
+<section style="list-style-type: none;">
     <h1>Наши курсы и мастер-классы</h1>
 
     {% for cat in category %}
