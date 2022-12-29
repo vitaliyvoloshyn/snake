@@ -10,7 +10,6 @@ class CourseCopy:
         return copy_course
 
 
-
 class Course(CourseCopy):
     auto_id = 0
     """Интерфейс для создания курсов"""
@@ -31,6 +30,7 @@ class Course(CourseCopy):
 
 class RecordCourse(Course):
     """класс курса в записи"""
+
     def __str__(self):
         return 'В записи'
 
@@ -92,7 +92,6 @@ class Category:
         course: Course = list(filter(lambda x: x.name == course_name, self.courses))
         self._add_course_to_list(course[0].clone())
 
-
     def _add_course_to_list(self, course: Course):
         """Добавить новый курс к списку курсов"""
         self.courses.append(course)
@@ -129,9 +128,60 @@ class Engine:
                 return item
         raise Exception(f'Нет категории с id = {id}')
 
+    def text(self, text):
+        print(text)
+
+
+class Handler:
+    def print_(self, text):
+        pass
+
+
+class ConsoleHandler(Handler):
+    def print_(self, text):
+        print(text)
+
+
+class FileHandler(Handler):
+    def __init__(self, filename: str):
+        self._out_file = filename
+
+    def print_(self, text: str):
+        with open(self._out_file, 'a') as f:
+            f.write(text + '\n')
+
+
+class Log:
+    _instance: dict = {}
+
+    def __init__(self, name: str):
+        self._name = name
+        self._handler = ConsoleHandler()
+
+    def __new__(cls, *args, **kwargs):
+        name = args[0] if args else kwargs.get('name', None)
+        if not cls._instance.get(name, None):
+            cls._instance[name] = super().__new__(cls)
+        return cls._instance[name]
+
+    def set_handler(self, handler: Handler):
+        if handler.__name__ == 'FileHandler':
+            self._handler = handler(f'{self._name}_log.txt')
+        elif handler.__name__ == 'ConsoleHandler':
+            self._handler = handler
+
+    def log(self, text: str):
+        self._handler.print_(text)
+
+
+def get_logger(name: str) -> Log:
+    return Log(name)
+
 
 if __name__ == '__main__':
-    a=Engine()
-    a.categories[0].create_course(CoursesTypes.online, 'pizza')
-    a.categories[0].clone_course('pizza')
-    print(type(list(CoursesTypes().__dict__.keys())[0]))
+    a = FileHandler
+    print(a.__name__)
+    a = get_logger('aaa')
+    a.set_handler(FileHandler)
+    a.log('hello')
+    a.log('world')

@@ -1,5 +1,8 @@
+from patterns.creational_patterns import get_logger
 from snake.request import Request
 from snake.response import ResponseHTML, Response
+
+logger = get_logger('my_log')
 
 
 class View:
@@ -31,7 +34,9 @@ class TemplateView(View):
     template_name = ''
 
     def get(self, request: Request = None, *args, **kwargs) -> Response:
+        logger.log("принят GET-запрос")
         return ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=self.get_context())
 
     def post(self, request: Request = None, *args, **kwargs) -> Response:
+        logger.log("принят POST-запрос")
         return ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=self.get_context())
