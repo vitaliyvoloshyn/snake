@@ -68,8 +68,6 @@ class Snake:
                 raise NotAllowed
         except NotAllowed as e:
             return NotAllowed405View().get(request)
-        print(view)
-        print(getattr(view, method))
         return getattr(view, method)(request)
 
     @staticmethod

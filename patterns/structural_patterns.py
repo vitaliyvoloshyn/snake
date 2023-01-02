@@ -15,18 +15,13 @@ class AppRout:
 
 
 def debug(func):
-    def wrapper(g, arg):
-        print(f'Вызвана функция - {func.__name__}')
-        print(arg)
+    def wrapper(inst, arg):
+        print(f'----------debug----------')
+        print(f'Вызвана функция - {func.__name__} {inst}')
         time_start = time.perf_counter()
-        func(arg)
+        result = func(inst, arg)
         print(f'затрачено на выполнение: {time.perf_counter() - time_start} с')
+        print('-' * 25)
+        return result
 
     return wrapper
-
-@debug
-def gh(hjhjhhj):
-    print(f'this is {hjhjhhj}')
-
-if __name__ == '__main__':
-    gh('john')

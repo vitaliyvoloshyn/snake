@@ -7,6 +7,7 @@ class CourseCopy:
 
     def clone(self):
         copy_course = deepcopy(self)
+        copy_course.id = self.get_id()
         return copy_course
 
 
@@ -151,12 +152,19 @@ class FileHandler(Handler):
             f.write(text + '\n')
 
 
+class Formatter:
+    @staticmethod
+    def get_format_text(text):
+        return f'log >>> {text}'
+
+
 class Log:
     _instance: dict = {}
 
     def __init__(self, name: str):
         self._name = name
         self._handler = ConsoleHandler()
+        self._formatter = Formatter()
 
     def __new__(cls, *args, **kwargs):
         name = args[0] if args else kwargs.get('name', None)
@@ -170,18 +178,12 @@ class Log:
         elif handler.__name__ == 'ConsoleHandler':
             self._handler = handler
 
+    def set_formatter(self, formatter: Formatter):
+        self._formatter = formatter
+
     def log(self, text: str):
-        self._handler.print_(text)
+        self._handler.print_(self._formatter.get_format_text(text))
 
 
 def get_logger(name: str) -> Log:
     return Log(name)
-
-
-if __name__ == '__main__':
-    a = FileHandler
-    print(a.__name__)
-    a = get_logger('aaa')
-    a.set_handler(FileHandler)
-    a.log('hello')
-    a.log('world')
