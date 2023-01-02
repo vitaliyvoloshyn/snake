@@ -1,20 +1,24 @@
 import pprint
 from typing import List, Type
+import view
 
 from snake.exeptions import NotFound, NotAllowed
 from snake.request import Request
 from snake.response import Response, ResponseStatic
 from snake.static import StaticFiles
+from snake.urlpatterns import urlpatterns
 from snake.urls import Url
 from snake.views import NotFound404View, NotAllowed405View
 from snake.views import View
 
 
+
+
 class Snake:
     __slots__ = ('urls', 'view', 'request', 'response', 'static_files', 'input_post_data')
 
-    def __init__(self, urls: List[Url]):
-        self.urls = urls
+    def __init__(self):
+        self.urls = urlpatterns
 
     def __call__(self, environ: dict, start_response):
         # pprint.pprint(environ)
@@ -64,6 +68,8 @@ class Snake:
                 raise NotAllowed
         except NotAllowed as e:
             return NotAllowed405View().get(request)
+        print(view)
+        print(getattr(view, method))
         return getattr(view, method)(request)
 
     @staticmethod
