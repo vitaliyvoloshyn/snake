@@ -1,6 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import List
+from typing import List, Dict
 
 
 class CourseCopy:
@@ -129,6 +129,10 @@ class Engine:
                 return item
         raise Exception(f'Нет категории с id = {id}')
 
+    def create_user(self, type_: str, course: Course, name: str):
+        UserFactory.create(type_, name)
+
+
     def text(self, text):
         print(text)
 
@@ -187,3 +191,42 @@ class Log:
 
 def get_logger(name: str) -> Log:
     return Log(name)
+
+
+class User:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class UserFactory:
+    types: Dict[str, User] = {}
+
+    @classmethod
+    def create(cls, type_: str, name: str):
+        type_class = cls.types.get(type_)
+        if type_class is not None:
+            return type_class(name)
+        raise Exception(f'Некорректное значение параметра type_ {type_}')
+
+
+def add_instance_to_types_UserFactory(cls):
+    UserFactory.types[cls.__name__] = cls
+
+
+@add_instance_to_types_UserFactory
+class Student(User):
+    def __init__(self, name: str):
+        super().__init__(name)
+
+
+@add_instance_to_types_UserFactory
+class Teacher(User):
+    def __init__(self, name: str):
+        super().__init__(name)
+
+
+if __name__ == '__main__':
+    user = UserFactory.types['Student']('alex')
+    print(user.name)
+    teacher = UserFactory.types['Teacher']('John')
+    print(teacher.name)
