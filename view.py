@@ -4,7 +4,7 @@ from typing import List, Union
 from patterns.patterns import Engine, CoursesTypes, Course, Category
 from patterns.structural_patterns import AppRout, debug
 from snake.request import Request
-from snake.response import Response
+from snake.response import Response, ResponseHTML, ResponceRedirect
 from snake.views import TemplateView
 
 site = Engine()
@@ -33,7 +33,7 @@ class LearnCookPageView(TemplateView):
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         cat = request.POST.get('category')[0]
         site.create_category(name=cat)
-        return super().post(request)
+        return ResponceRedirect(to='/learncook', )
 
 
 @AppRout('/learncook/category')
@@ -42,6 +42,7 @@ class DetailCategoryView(TemplateView):
 
     @debug
     def get(self, request: Request = None, *args, **kwargs) -> Response:
+        print(request.GET)
         self.parent_category = self._get_parent_category(request.GET.get('name')[0])
         if self.parent_category is None:
             raise Exception('Не указано имя категории')
@@ -63,7 +64,8 @@ class DetailCategoryView(TemplateView):
         elif operation == 'clone_course':
             new_course = site.get_component_by_name(request.POST.get('course_name')[0])
             site.clone_course(new_course)
-        return super().post(request)
+        query = request.GET.get('raw_query_string')
+        return ResponceRedirect(to=f'/learncook/category?{query}')
 
     @staticmethod
     def _get_parent_category(category_name: str) -> Category:
@@ -123,7 +125,7 @@ class ContactPageView(TemplateView):
         contact_mail = request.POST.get('contact_email')[0]
         contact_message = request.POST.get('contact_message')[0]
         self._write_to_file_contact_message(contact_name, contact_mail, contact_message)
-        return super().post()
+        return ResponceRedirect(to='/contact')
 
     @staticmethod
     def _write_to_file_contact_message(name: str, email: str, message: str):
@@ -132,3 +134,21 @@ class ContactPageView(TemplateView):
         print(out_str)
         with open(filename, 'a', encoding='windows-1251') as f:
             f.write(out_str)
+
+
+@AppRout('/registration')
+class Registration(TemplateView):
+    template_name = 'registration.html'
+
+    @debug
+    def post(self, request: Request = None, *args, **kwargs) -> Response:
+        print('request', request.POST)
+        return ResponceRedirect(to='/successful_registration')
+
+
+@AppRout('/successful_registration')
+class SuccesfullRegistration(TemplateView):
+    template_name = 'successfull_registration.html'
+
+
+

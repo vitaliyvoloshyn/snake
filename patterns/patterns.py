@@ -59,6 +59,7 @@ class Course(Component, CourseCopy):
         super().__init__(name)
         self.parent = parent_category
         self.parent.children.append(self)
+        self.students_list: List[Student] = []
 
 
 class RecordCourse(Course):
@@ -99,6 +100,15 @@ class CourseFactory:
         return type_(name, parent_category)
 
 
+class Student:
+    def __init__(self, first_name: str, last_name: str, email: str, phone: str, course: Course):
+        self.phone = phone
+        self.email = email
+        self.last_name = last_name
+        self.first_name = first_name
+        course.students_list.append(self)
+
+
 class Engine:
     _category_list: List[Category] = []
     start_categories = [
@@ -127,16 +137,21 @@ class Engine:
         new_course = course.clone()
         course.parent.children.append(new_course)
 
+    def create_student(self, first_name: str, last_name: str, email: str, phone: str, course: Course) -> Student:
+        student = Student(first_name, last_name, email, phone, course)
+        return student
+
     @classmethod
     def _add_to_category_list(cls, category: Category) -> None:
         """Добавляет в список только категории без родителей (верхний уровень)"""
         if category.parent is None:
             cls._category_list.append(category)
 
+
+
     @classmethod
     def get_categories(cls) -> List[Category]:
         return cls._category_list
-
 
     @classmethod
     def get_component_by_name(cls, name: str) -> Union[Component, None]:

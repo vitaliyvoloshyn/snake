@@ -79,3 +79,9 @@ class ResponseHTML(Response):
     def _get_template_as_string(template_name: str, context: dict):
         template = Templator(template_name)
         return template.render(context)
+
+class ResponceRedirect(ResponseHTML):
+    def __init__(self, to: str, context: dict = {}, status_code: str = '302 Found'):
+        headers = {'Location': to}
+        super().__init__(status_code=status_code, headers=headers, context=context)
+

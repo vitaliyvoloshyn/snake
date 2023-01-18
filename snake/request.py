@@ -15,3 +15,4 @@ class Request:
 
     def build_get_params_dict(self, raw_params: str) -> None:
         self.GET = parse_qs(raw_params)
+        self.GET['raw_query_string'] = raw_params
