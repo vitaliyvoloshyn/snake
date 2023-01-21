@@ -1,4 +1,4 @@
-from patterns.creational_patterns import get_logger
+from patterns.patterns import get_logger
 from snake.request import Request
 from snake.response import ResponseHTML, Response
 

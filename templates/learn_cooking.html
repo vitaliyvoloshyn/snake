@@ -20,8 +20,9 @@
         <img class="card-img-top" src="{{ cat.path_img }}" alt="Card image cap">
         <div class="card-body">
             <h5 class="card-title">{{ cat.name }}</h5>
+            <p class="card-text">Подкатегорий: {{ cat.subcategories_count() }}</p>
             <p class="card-text">Курсов в данной категории: {{ cat.course_count() }}</p>
-            <a href="{{ url }}/learncook/category?id={{ cat.id }}" class="btn btn-primary">Список курсов</a>
+            <a href="{{ url }}/learncook/category?name={{ cat.name }}" class="btn btn-primary">Список курсов</a>
         </div>
     </div>
     {% endfor %}

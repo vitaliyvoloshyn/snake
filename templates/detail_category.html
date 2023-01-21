@@ -4,11 +4,22 @@
 <section id="about" class="tm-section">
     <p>Категория:</p>
     <h1 style="margin-bottom: 5rem;">{{ category.name }}</h1>
+
+    <form action="" method="post">
+        <p><label for="course_name">Добавить подкатегорию</label></p>
+        <div style="margin-bottom: 5rem;">
+            <input type="hidden" name="operation" value="add_subcategory">
+            <input type="hidden" name="parent_category" value="{{ category.name }}">
+            <input type="text" id="subcategory_name" name="subcategory_name">
+            <input type="submit" value="Добавить">
+        </div>
+    </form>
+
     <form action="" method="post">
         <p><label for="course_name">Добавить курс</label></p>
         <div style="margin-bottom: 5rem;">
-            <input type="hidden" name="operation" value="create_course">
-            <input type="hidden" name="category_id" value="{{ category.id }}">
+            <input type="hidden" name="operation" value="add_course">
+            <input type="hidden" name="parent_category" value="{{ category.name }}">
             <input type="text" id="course_name" name="course_name">
             <select name="course_type" size="1">
                 {% for course_type in courses_types %}
@@ -18,14 +29,34 @@
             <input type="submit" value="Добавить">
         </div>
     </form>
-    <p>Список доступных курсов:</p>
-    {% for course in category.courses %}
-    <p><strong style="color: #ff6600;">{{ course.name }}</strong> формат: <strong>{{ course }}</strong>
+    <p>Список доступных подкатегорий в категории:</p>
+    {% for subcategory in subcategories %}
+        <p>
+            <strong style="color: #ff6600;">
+                <a href="{{ url }}/learncook/category?name={{ subcategory.name }}">{{ subcategory.name }}</a>
+            </strong>
+            Подкатегорий : <strong>{{ subcategory.subcategories_count() }}</strong>
+            Курсов : <strong>{{ subcategory.course_count() }}</strong>
+        </p>
+    {% endfor %}
+
+    <p>Список доступных курсов в категории:</p>
+    {% for course in courses %}
+    <p><strong style="color: #ff6600;">
+        {{ course.name }}
+    </strong>
+        формат: <strong>{{ course }}</strong>
     <form action="" method="post">
-    <input type="hidden" name="operation" value="clone_course">
-    <input type="hidden" name="category_id" value="{{ category.id }}">
-    <input type="hidden" name="course_name" value="{{ course.name }}">
-    <input type="submit" value="Копировать курс">
+        <input type="hidden" name="operation" value="clone_course">
+        <input type="hidden" name="parent_category" value="{{ category.name }}">
+        <input type="hidden" name="course_name" value="{{ course.name }}">
+        <input type="submit" value="Копировать курс">
+    </form>
+    <form action="" method="post">
+        <input type="hidden" name="operation" value="notify">
+        <input type="hidden" name="parent_category" value="{{ category.name }}">
+        <input type="hidden" name="course_name" value="{{ course.name }}">
+        <input type="submit" value="Уведомить студентов об изменении в курсе">
     </form>
     </p>
     {% endfor %}

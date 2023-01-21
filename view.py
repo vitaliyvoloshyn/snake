@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import List
+from typing import List, Union
 
-from patterns.creational_patterns import Engine, Category, CoursesTypes, get_logger
+from patterns.patterns import Engine, CoursesTypes, Course, Category, EmailNotifier, PhoneNotifier
 from patterns.structural_patterns import AppRout, debug
+from snake.exeptions import NotUniqueEmail
 from snake.request import Request
-from snake.response import Response, ResponseHTML
-from snake.urls import Url
+from snake.response import Response, ResponceRedirect
 from snake.views import TemplateView
 
 site = Engine()
@@ -27,14 +27,14 @@ class LearnCookPageView(TemplateView):
 
     def get_context(self) -> dict:
         context = super().get_context()
-        context['category'] = site.categories
+        context['category'] = site.get_categories_without_parents()
         return context
 
     @debug
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         cat = request.POST.get('category')[0]
         site.create_category(name=cat)
-        return super().post(request)
+        return ResponceRedirect(to='/learncook', )
 
 
 @AppRout('/learncook/category')
@@ -43,32 +43,55 @@ class DetailCategoryView(TemplateView):
 
     @debug
     def get(self, request: Request = None, *args, **kwargs) -> Response:
-        self.category_id = int(request.GET.get('id')[0])
-        if self.category_id is None:
-            raise Exception('Не указан id категории')
+        self.parent_category = self._get_parent_category(request.GET.get('name')[0])
+        if self.parent_category is None:
+            raise Exception('Не указано имя категории')
         self.context = self.get_context()
         return super().get(request)
 
     @debug
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         operation = request.POST.get('operation')[0]
-        self.category_id = int(request.POST.get('category_id')[0])
-        category = site.find_category_by_id(self.category_id)
-        course_name = request.POST.get('course_name')[0]
-        self.context = self.get_context()
-        if operation == 'create_course':
-            course_type = request.POST.get('course_type')[0]
-            category.create_course(getattr(CoursesTypes, course_type), course_name)
+        self.parent_category = self._get_parent_category(request.POST.get('parent_category')[0])
+        if operation == 'add_subcategory':
+            new_category = request.POST.get('subcategory_name')[0]
+            site.create_category(name=new_category, parent_category=self.parent_category)
+        elif operation == 'add_course':
+            new_course = request.POST.get('course_name')[0]
+            course_type = getattr(CoursesTypes, request.POST.get('course_type')[0])
+            site.create_course(type_=course_type, name=new_course, parent_category=self.parent_category)
 
         elif operation == 'clone_course':
-            category.clone_course(course_name)
-        return super().post(request)
+            new_course = site.get_component_by_name(request.POST.get('course_name')[0])
+            site.clone_course(new_course)
+
+        elif operation == 'notify':
+            course = site.get_component_by_name(request.POST.get('course_name')[0])
+            course.send_notification((EmailNotifier, PhoneNotifier))
+        query = request.GET.get('raw_query_string')
+        return ResponceRedirect(to=f'/learncook/category?{query}')
+
+    @staticmethod
+    def _get_parent_category(category_name: str) -> Category:
+        return site.get_component_by_name(category_name)
 
     def get_context(self) -> dict:
         context = super().get_context()
-        context['category'] = site.find_category_by_id(self.category_id)
+        context['category'] = self.parent_category
+        context['subcategories'] = self._get_child_categories(self.parent_category)
+        context['courses'] = self._get_child_courses(self.parent_category)
         context['courses_types'] = list(CoursesTypes().__dict__.keys())
         return context
+
+    @staticmethod
+    def _get_child_categories(parent_category: Category) -> List[Union[Category, None]]:
+        child_categories = list(filter(lambda x: isinstance(x, Category), parent_category.children))
+        return child_categories
+
+    @staticmethod
+    def _get_child_courses(parent_category: Category) -> List[Union[Course, None]]:
+        child_courses = list(filter(lambda x: isinstance(x, Course), parent_category.children))
+        return child_courses
 
 
 @AppRout('/developer')
@@ -106,7 +129,7 @@ class ContactPageView(TemplateView):
         contact_mail = request.POST.get('contact_email')[0]
         contact_message = request.POST.get('contact_message')[0]
         self._write_to_file_contact_message(contact_name, contact_mail, contact_message)
-        return super().post()
+        return ResponceRedirect(to='/contact')
 
     @staticmethod
     def _write_to_file_contact_message(name: str, email: str, message: str):
@@ -115,3 +138,45 @@ class ContactPageView(TemplateView):
         print(out_str)
         with open(filename, 'a', encoding='windows-1251') as f:
             f.write(out_str)
+
+
+@AppRout('/registration')
+class Registration(TemplateView):
+    template_name = 'registration.html'
+
+    def get_context(self) -> dict:
+        context = super().get_context()
+        context['courses'] = site.get_courses()
+        return context
+
+    @debug
+    def post(self, request: Request = None, *args, **kwargs) -> Response:
+        try:
+            self._create_student(request)
+            return ResponceRedirect(to='/successful_registration')
+        except NotUniqueEmail as err:
+            return ResponceRedirect(to='/error_registration', context={'message': f'{err}'})
+
+    @staticmethod
+    def _create_student(request: Request) -> bool:
+        f_n = request.POST.get('first_name')[0]
+        l_n = request.POST.get('last_name')[0]
+        email = request.POST.get('email')[0]
+        phone = request.POST.get('phone')[0]
+        course = site.get_component_by_name(request.POST.get('course')[0])
+        site.create_student(first_name=f_n,
+                            last_name=l_n,
+                            email=email,
+                            phone=phone,
+                            course=course)
+        return True
+
+
+@AppRout('/successful_registration')
+class SuccessfullRegistration(TemplateView):
+    template_name = 'successfull_registration.html'
+
+
+@AppRout('/error_registration')
+class ErrorRegistration(TemplateView):
+    template_name = 'error_registration.html'

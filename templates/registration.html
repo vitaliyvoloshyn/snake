@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Регистрация</h1>
+
+<form method="post" action="">
+    <div class="mb-3">
+        <label for="InputFirstName" class="form-label">Имя</label>
+        <input id="InputFirstName" type="text" name="first_name" placeholder="Ваше имя ..." required
+               class="form-control">
+    </div>
+    <div class="mb-3">
+        <label for="InputLastName" class="form-label">Фамилия</label>
+        <input id="InputLastName" type="text" name="last_name" placeholder="Ваша фамилия ..." required
+               class="form-control">
+    </div>
+    <div class="mb-3">
+        <label for="InputEmail" class="form-label">Email</label>
+        <input id="InputEmail" type="email" name="email" placeholder="Адрес Вашей электронной почты ..." required
+               class="form-control">
+    </div>
+    <div class="mb-3">
+        <label for="InputPhone" class="form-label">Телефон</label>
+        <input id="InputPhone" type="tel" name="phone" placeholder="Ваш контактный телефон ..." required
+               class="form-control">
+    </div>
+    <div class="mb-3">
+        <label for="InputCourse" class="form-label">Курс</label>
+        <select id="InputCourse" name="course" required class="form-control">
+            {% for course in courses %}
+            <option value="{{ course.name }}">{{ course.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+    <button type="submit" class="btn btn-primary">Регистрация</button>
+</form>
+{% endblock %}
