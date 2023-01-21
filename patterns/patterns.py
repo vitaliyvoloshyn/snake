@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import List, Union
+from typing import List, Union, Tuple
+
+from snake.exeptions import NotUniqueEmail
 
 
 class Component(ABC):
@@ -59,7 +61,14 @@ class Course(Component, CourseCopy):
         super().__init__(name)
         self.parent = parent_category
         self.parent.children.append(self)
-        self.students_list: List[Student] = []
+        self.observers: List[Student] = []
+
+    def add_observer(self, observer: Student) -> None:
+        self.observers.append(observer)
+
+    def send_notification(self, notifier: Tuple[Notifier]) -> None:
+        for obsrerver in self.observers:
+            obsrerver.student_notify(notifier)
 
 
 class RecordCourse(Course):
@@ -102,15 +111,42 @@ class CourseFactory:
 
 class Student:
     def __init__(self, first_name: str, last_name: str, email: str, phone: str, course: Course):
+        self.course = course
         self.phone = phone
         self.email = email
         self.last_name = last_name
         self.first_name = first_name
-        course.students_list.append(self)
+        self.course.add_observer(self)
+
+    def student_notify(self, notifier: Tuple[Notifier]) -> None:
+        for ntfr in notifier:
+            ntfr.notify(self)
+
+
+class Notifier(ABC):
+    @classmethod
+    @abstractmethod
+    def notify(cls, student: Student):
+        pass
+
+
+class EmailNotifier(Notifier):
+    @classmethod
+    def notify(cls, student: Student):
+        print(
+            f'Отправлено уведомление студенту {student.last_name} {student.first_name} на электронный адрес {student.email}')
+
+
+class PhoneNotifier(Notifier):
+    @classmethod
+    def notify(cls, student: Student):
+        print(f'Отправлено уведомление студенту {student.last_name} {student.first_name} на телефон {student.phone}')
 
 
 class Engine:
     _category_list: List[Category] = []
+    _students_list: List[Student] = []
+    _courses_list: List[Course] = []
     start_categories = [
         ['Кулинарные курсы', 'img/kulinarnie_kursy.jpg'],
         ['Кондитерские курсы', 'img/konditerskie_kursi.jpg'],
@@ -131,50 +167,84 @@ class Engine:
 
     def create_course(self, type_: Course, name: str, parent_category: Category) -> Course:
         course = CourseFactory.create(type_, name, parent_category)
+        self._add_to_courses_list(course)
         return course
 
     def clone_course(self, course: Course):
         new_course = course.clone()
         course.parent.children.append(new_course)
+        self._add_to_courses_list(new_course)
 
     def create_student(self, first_name: str, last_name: str, email: str, phone: str, course: Course) -> Student:
-        student = Student(first_name, last_name, email, phone, course)
-        return student
+        if self._validate_email(email):
+            student = Student(first_name, last_name, email, phone, course)
+            self._add_to_student_list(student)
+            return student
 
     @classmethod
     def _add_to_category_list(cls, category: Category) -> None:
-        """Добавляет в список только категории без родителей (верхний уровень)"""
-        if category.parent is None:
-            cls._category_list.append(category)
+        cls._category_list.append(category)
 
+    @classmethod
+    def _add_to_courses_list(cls, course: Course) -> None:
+        cls._courses_list.append(course)
 
+    @classmethod
+    def _add_to_student_list(cls, student: Student) -> None:
+        cls._students_list.append(student)
 
     @classmethod
     def get_categories(cls) -> List[Category]:
         return cls._category_list
 
     @classmethod
+    def get_categories_without_parents(cls) -> List[Category]:
+        return list(filter(lambda x: x.parent is None, cls._category_list))
+
+    @classmethod
+    def get_students(cls) -> List[Student]:
+        return cls._students_list
+
+    @classmethod
+    def get_students(cls, course: Course = None) -> List[Student]:
+        if course:
+            return list(filter(lambda x: x.course is course, cls._students_list))
+        return cls._students_list
+
+    @classmethod
+    def count_students(cls, course: Course = None) -> int:
+        cnt = len(cls.get_students(course))
+        return cnt
+
+    @classmethod
+    def get_student_by_email(cls, email: str) -> Union[Student, None]:
+        for student in cls._students_list:
+            if student.email == email:
+                return student
+        return None
+
+    @classmethod
+    def _validate_email(cls, email: str) -> bool:
+        """Проверка уникальности email при регистрации нового пользователя"""
+        if cls.get_student_by_email(email):
+            raise NotUniqueEmail(f'Пользователь с электронным адресом {email} уже зарегистрирован')
+        return True
+
+    @classmethod
+    def get_courses(cls) -> List[Union[Course, None]]:
+        """Возвращает список всех созданных курсов"""
+        return cls._courses_list
+
+    @classmethod
     def get_component_by_name(cls, name: str) -> Union[Component, None]:
         for category in cls._category_list:
             if category.name == name:
                 return category
-            else:
-                if isinstance(category, Category):
-                    res = cls._get_component_by_name_from_children(name, category)
-                    if res:
-                        return res
-
+        for course in cls._courses_list:
+            if course.name == name:
+                return course
         return None
 
-    @classmethod
-    def _get_component_by_name_from_children(cls, name: str, parent_category: Category) -> Union[Component, None]:
-        for child in parent_category.children:
-            if child.name == name:
-                return child
-            else:
-                res = cls._get_component_by_name_from_children(name, child)
-                if res:
-                    return res
 
 class Handler:
     def print_(self, text):

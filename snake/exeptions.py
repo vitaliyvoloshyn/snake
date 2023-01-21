@@ -14,3 +14,8 @@ class NotFound(Base_Exception):
 class NotAllowed(Base_Exception):
     code = 405
     text = 'Неподдерживаемый http метод'
+
+
+class NotUniqueEmail(Exception):
+    def __init__(self, txt):
+        self.txt = txt
