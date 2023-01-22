@@ -7,7 +7,7 @@ from patterns.structural_patterns import AppRout, debug
 from snake.exeptions import NotUniqueEmail
 from snake.request import Request
 from snake.response import Response, ResponceRedirect
-from snake.views import TemplateView, ListView
+from snake.views import TemplateView, ListView, DetailView
 
 site = Engine()
 
@@ -186,4 +186,10 @@ class ErrorRegistration(TemplateView):
 @AppRout('/students_list')
 class StudentsLstView(ListView):
     template_name = 'students_list.html'
+    model = MapperRegistry.get_current_mapper('student')
+
+
+@AppRout('/student')
+class DetailStudentView(DetailView):
+    template_name = 'detail_student.html'
     model = MapperRegistry.get_current_mapper('student')

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
 from sqlite3 import connect
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 
 from settings import DATABASE, BASE_DIR
 from snake.exeptions import NotUniqueEmail
@@ -113,7 +113,8 @@ class CourseFactory:
 
 
 class Student:
-    def __init__(self, first_name: str, last_name: str, email: str, phone: str, course: Course):
+    def __init__(self, first_name: str, last_name: str, email: str, phone: str, course: Course, student_id: int = 0):
+        self.student_id = student_id
         self.course = course
         self.phone = phone
         self.email = email
@@ -320,7 +321,7 @@ class StudentMapper:
         for item in self.cursor.execute(statement).fetchall():
             id, first_name, last_name, email, phone, course = item
             course = Engine.get_component_by_name(course)
-            student = Student(first_name, last_name, email, phone, course)
+            student = Student(first_name, last_name, email, phone, course, id)
 
             result.append(student)
         return result
@@ -331,7 +332,21 @@ class StudentMapper:
         if result:
             id, first_name, last_name, email, phone, course = result
             course = Engine.get_component_by_name(course)
-            student = Student(first_name, last_name, email, phone, course)
+            student = Student(first_name, last_name, email, phone, course, id)
+            return student
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+    def filter(self, **kwargs) -> List[Student]:
+        """Выборка данных по условию. Принимает словарь - параметр и значение. Принимает только один фильтр"""
+        param = list(kwargs.keys())[0]
+        value = kwargs.get(param)
+        statement = f"SELECT * FROM {self.tablename} WHERE {param}='{value}'"
+        result = self.cursor.execute(statement).fetchone()
+        if result:
+            id, first_name, last_name, email, phone, course = result
+            course = Engine.get_component_by_name(course)
+            student = Student(first_name, last_name, email, phone, course, id)
             return student
         else:
             raise RecordNotFoundException(f'record with id={id} not found')
@@ -411,4 +426,6 @@ if __name__ == '__main__':
     mapp.update(4, st4)
     mapp.delete(4)
     mapp.delete(4)
+    print(mapp.filter(email='zsdd@sd.c'))
+    print(mapp.filter(id=1).email)
 

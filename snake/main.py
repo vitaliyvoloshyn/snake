@@ -79,7 +79,8 @@ class Snake:
                 raise NotAllowed
         except NotAllowed as e:
             return NotAllowed405View().get(request)
-        return getattr(view, method)(request)
+        dg = getattr(view, method)(request)
+        return dg
 
     @staticmethod
     def _get_filename_from_url(url: str) -> str:

@@ -35,7 +35,8 @@ class TemplateView(View):
 
     def get(self, request: Request = None, *args, **kwargs) -> Response:
         logger.log("принят GET-запрос")
-        return ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=self.get_context())
+        obj = ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=self.get_context())
+        return obj
 
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         logger.log("принят POST-запрос")
@@ -44,16 +45,40 @@ class TemplateView(View):
 
 class ListView(TemplateView):
     model = None
-    template_name = None
     context_object_name = 'objects_list'
     queryset = []
 
+    def get_queryset(self) -> list:
+        self.queryset = self.model.all()
+        return self.queryset
+
+    def get_context(self) -> dict:
+        return {self.context_object_name: self.get_queryset()}
+
+
+class DetailView(ListView):
+    context_object_name = 'object'
+    object_id: int = 0
+
     def __init__(self):
-        self.queryset = self.get_queryset()
+        super().__init__()
 
     def get_queryset(self) -> list:
-        return self.model.all()
+        self.queryset = self.model.find_by_id(self.object_id)
+        return self.queryset
 
     def get_context(self) -> dict:
         return {self.context_object_name: self.queryset}
+
+    def get(self, request: Request = None, *args, **kwargs) -> Response:
+        self.object_id = self._get_object_id(request)
+        if not self.object_id:
+            return Response(status_code='404 NOT FOUND', body=b'404 NOT FOUND')
+        self.get_queryset()
+        return super().get(request)
+
+    @staticmethod
+    def _get_object_id(request: Request) -> int:
+        id_ = request.GET.get('id', 0)
+        return id_[0] if id_ else 0
 
