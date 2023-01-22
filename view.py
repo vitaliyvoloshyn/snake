@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import List, Union
 
-from patterns.patterns import Engine, CoursesTypes, Course, Category, EmailNotifier, PhoneNotifier
+from patterns.patterns import Engine, CoursesTypes, Course, Category, EmailNotifier, PhoneNotifier, StudentMapper, \
+    MapperRegistry
 from patterns.structural_patterns import AppRout, debug
 from snake.exeptions import NotUniqueEmail
 from snake.request import Request
 from snake.response import Response, ResponceRedirect
-from snake.views import TemplateView
+from snake.views import TemplateView, ListView
 
 site = Engine()
 
@@ -180,3 +181,9 @@ class SuccessfullRegistration(TemplateView):
 @AppRout('/error_registration')
 class ErrorRegistration(TemplateView):
     template_name = 'error_registration.html'
+
+
+@AppRout('/students_list')
+class StudentsLstView(ListView):
+    template_name = 'students_list.html'
+    model = MapperRegistry.get_current_mapper('student')

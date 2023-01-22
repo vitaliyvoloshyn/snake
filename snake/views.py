@@ -40,3 +40,20 @@ class TemplateView(View):
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         logger.log("принят POST-запрос")
         return ResponseHTML(status_code=self.status_code, template_name=self.template_name, context=self.get_context())
+
+
+class ListView(TemplateView):
+    model = None
+    template_name = None
+    context_object_name = 'objects_list'
+    queryset = []
+
+    def __init__(self):
+        self.queryset = self.get_queryset()
+
+    def get_queryset(self) -> list:
+        return self.model.all()
+
+    def get_context(self) -> dict:
+        return {self.context_object_name: self.queryset}
+

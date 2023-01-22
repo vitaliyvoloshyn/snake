@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import os.path
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
+from sqlite3 import connect
 from typing import List, Union, Tuple
 
+from settings import DATABASE, BASE_DIR
 from snake.exeptions import NotUniqueEmail
 
 
@@ -179,6 +182,8 @@ class Engine:
         if self._validate_email(email):
             student = Student(first_name, last_name, email, phone, course)
             self._add_to_student_list(student)
+            mapper = MapperRegistry.get_current_mapper('student')
+            mapper.insert(student)
             return student
 
     @classmethod
@@ -302,5 +307,108 @@ def get_logger(name: str) -> Log:
     return Log(name)
 
 
+class StudentMapper:
+
+    def __init__(self, connection):
+        self.connection = connection
+        self.cursor = connection.cursor()
+        self.tablename = 'student'
+
+    def all(self) -> List[Student]:
+        statement = f'SELECT * from {self.tablename}'
+        result = []
+        for item in self.cursor.execute(statement).fetchall():
+            id, first_name, last_name, email, phone, course = item
+            course = Engine.get_component_by_name(course)
+            student = Student(first_name, last_name, email, phone, course)
+
+            result.append(student)
+        return result
+
+    def find_by_id(self, id: int) -> List[Student]:
+        statement = f"SELECT * FROM {self.tablename} WHERE id=?"
+        result = self.cursor.execute(statement, (id,)).fetchone()
+        if result:
+            id, first_name, last_name, email, phone, course = result
+            course = Engine.get_component_by_name(course)
+            student = Student(first_name, last_name, email, phone, course)
+            return student
+        else:
+            raise RecordNotFoundException(f'record with id={id} not found')
+
+    def insert(self, obj: Student) -> None:
+        statement = f"INSERT INTO {self.tablename} (first_name, last_name, email, phone, course)" \
+                    f"VALUES (?,?,?,?,?)"
+        self.cursor.execute(statement, (obj.first_name, obj.last_name, obj.email, obj.phone, obj.course.name))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbCommitException(e.args)
+
+    def update(self, obj_id: int, obj: Student) -> None:
+        statement = f"UPDATE {self.tablename} SET first_name=?, last_name=?, email=?, phone=?, course=? Where id=?"
+
+        self.cursor.execute(statement, (obj.first_name, obj.last_name, obj.email, obj.phone, obj.course.name, obj_id))
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbUpdateException(e.args)
+
+    def delete(self, id: int):
+        statement = f"DELETE FROM {self.tablename} WHERE id={id}"
+        self.cursor.execute(statement)
+        try:
+            self.connection.commit()
+        except Exception as e:
+            raise DbDeleteException(e.args)
+
+def get_connection():
+    return connect(os.path.join(BASE_DIR, DATABASE.get('name')))
+
+
+# архитектурный системный паттерн - Data Mapper
+class MapperRegistry:
+    mappers = {
+        'student': StudentMapper,
+    }
+
+    @staticmethod
+    def get_current_mapper(name: str) -> StudentMapper:
+        return MapperRegistry.mappers[name](get_connection())
+
+
+class DbCommitException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db commit error: {message}')
+
+
+class DbUpdateException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db update error: {message}')
+
+
+class DbDeleteException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Db delete error: {message}')
+
+
+class RecordNotFoundException(Exception):
+    def __init__(self, message):
+        super().__init__(f'Record not found: {message}')
+
+
 if __name__ == '__main__':
     engine = Engine()
+    cat1 = engine.get_component_by_name('Кулинарные курсы')
+    course1 = engine.create_course(CoursesTypes.record, 'course1', cat1)
+    # st1 = engine.create_student('John', 'Connor', 'sdd@sd.c', '+1245780545', course1)
+    # st2 = engine.create_student('John', 'Connor', 'zsdd@sd.c', '+1245780545', course1)
+    # st3 = engine.create_student('John', 'Connor', 'zzsdd@sd.c', '+1245780545', course1)
+    st4 = Student('Johnny_bhbh', 'Connor', 'zzsdd@sd.c', '+1245780545', course1)
+    mapp = MapperRegistry.get_current_mapper('student')
+    print(mapp.all())
+    print(mapp.find_by_id(3))
+    mapp.update(4, st4)
+    mapp.delete(4)
+    mapp.delete(4)
+

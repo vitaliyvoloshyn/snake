@@ -1,6 +1,9 @@
+import os.path
 import pprint
 from typing import List, Type
 import view
+from settings import BASE_DIR, DATABASE
+from snake.create_db import create_db
 
 from snake.exeptions import NotFound, NotAllowed
 from snake.request import Request
@@ -19,6 +22,14 @@ class Snake:
 
     def __init__(self):
         self.urls = urlpatterns
+        self._create_database()
+
+    @staticmethod
+    def _create_database():
+        create_db()
+        ff = os.path.join(BASE_DIR, DATABASE['name'])
+        if not (os.path.exists(os.path.join(BASE_DIR, DATABASE['name']))):
+            create_db()
 
     def __call__(self, environ: dict, start_response):
         # pprint.pprint(environ)
