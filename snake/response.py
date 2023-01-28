@@ -5,7 +5,7 @@ from snake.template_engine import Templator
 
 
 class Response:
-
+    """Базовый клас Ответа"""
     def __init__(self,
                  status_code: str,
                  headers: dict = None,
@@ -31,6 +31,7 @@ class Response:
 
 
 class ResponseStatic(Response):
+    """Класс ответа на запрос статики"""
     types = {
         ('jpg', 'png'): {'Content-Type': 'image/jpeg'},
         ('css'): {'Content-Type': 'text/css'},
@@ -57,6 +58,7 @@ class ResponseStatic(Response):
 
 
 class ResponseHTML(Response):
+    """Класс ответа на запрос html"""
     headers_ = {'Content-Type': 'text/html; charset=utf-8'}
 
     def __init__(self,
@@ -82,6 +84,7 @@ class ResponseHTML(Response):
         return template.render(context)
 
 class ResponceRedirect(ResponseHTML):
+    """Класс ответа при редиректе"""
     def __init__(self, to: str, context: dict = {}, status_code: str = '302 Found'):
         headers = {'Location': to}
         super().__init__(status_code=status_code, headers=headers, context=context)

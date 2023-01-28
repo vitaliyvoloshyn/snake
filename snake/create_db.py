@@ -5,6 +5,7 @@ from settings import DATABASE, BASE_DIR
 
 
 def create_db():
+    """Создание файла БД"""
     if not os.path.exists(os.path.join(BASE_DIR, DATABASE.get('name'))):
         database_file = os.path.join(BASE_DIR, DATABASE.get('name'))
         con = sqlite3.connect(database_file)

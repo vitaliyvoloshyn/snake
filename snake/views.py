@@ -6,6 +6,7 @@ logger = get_logger('my_log')
 
 
 class View:
+    """Базовый класс представления"""
     status_code: str = '200 OK'
     body = 'testing page'
     context: dict = {}
@@ -21,16 +22,19 @@ class View:
 
 
 class NotFound404View(View):
+    """Класс представления 404 ошибки"""
     status_code: str = '404 NOT FOUND'
     body = '<h1>404 Страница не найдена</h1>'
 
 
 class NotAllowed405View(View):
+    """Класс представления 405 ошибки"""
     status_code: str = '405 NOT ALLOWED'
     body = '<h1>405 Not Allowed</h1>'
 
 
 class TemplateView(View):
+    """Класс шаблонного представления"""
     template_name = ''
 
     def get(self, request: Request = None, *args, **kwargs) -> Response:
@@ -44,6 +48,7 @@ class TemplateView(View):
 
 
 class ListView(TemplateView):
+    """Класс шаблонного представления для отображения списков"""
     model = None
     context_object_name = 'objects_list'
     queryset = []
@@ -57,6 +62,7 @@ class ListView(TemplateView):
 
 
 class DetailView(ListView):
+    """Класс шаблонного представления для отображения детализации"""
     context_object_name = 'object'
     object_id: int = 0
 

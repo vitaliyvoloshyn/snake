@@ -130,7 +130,7 @@ class ThirdGalleryPageView(TemplateView):
 
 @AppRout('/contact')
 class ContactPageView(TemplateView):
-    """Страниа обратной связи"""
+    """Страница обратной связи"""
     template_name = 'contact.html'
 
     @debug
