@@ -14,6 +14,7 @@ site = Engine()
 
 @AppRout('')
 class HomePageView(TemplateView):
+    """Домашняя страница"""
     template_name = 'index.html'
 
     def get_context(self) -> dict:
@@ -24,6 +25,7 @@ class HomePageView(TemplateView):
 
 @AppRout('/learncook')
 class LearnCookPageView(TemplateView):
+    """Страница обучения"""
     template_name = 'learn_cooking.html'
 
     def get_context(self) -> dict:
@@ -40,6 +42,7 @@ class LearnCookPageView(TemplateView):
 
 @AppRout('/learncook/category')
 class DetailCategoryView(TemplateView):
+    """Страница категории"""
     template_name = 'detail_category.html'
 
     @debug
@@ -97,31 +100,37 @@ class DetailCategoryView(TemplateView):
 
 @AppRout('/developer')
 class DeveloperPageView(TemplateView):
+    """Страница о разработчике"""
     template_name = 'developer.html'
 
 
 @AppRout('/about')
 class AboutPageView(TemplateView):
+    """Страница о сайте"""
     template_name = 'about.html'
 
 
 @AppRout('/firstgallery')
 class FirstGalleryPageView(TemplateView):
+    """Страница первой галереи"""
     template_name = 'first_gallery.html'
 
 
 @AppRout('/secondgallery')
 class SecondGalleryPageView(TemplateView):
+    """Страница второй галереи"""
     template_name = 'second_gallery.html'
 
 
 @AppRout('/thirdgallery')
 class ThirdGalleryPageView(TemplateView):
+    """Страница третьей галереи"""
     template_name = 'third_gallery.html'
 
 
 @AppRout('/contact')
 class ContactPageView(TemplateView):
+    """Страниа обратной связи"""
     template_name = 'contact.html'
 
     @debug
@@ -143,6 +152,7 @@ class ContactPageView(TemplateView):
 
 @AppRout('/registration')
 class Registration(TemplateView):
+    """Страница регистрации"""
     template_name = 'registration.html'
 
     def get_context(self) -> dict:
@@ -175,21 +185,25 @@ class Registration(TemplateView):
 
 @AppRout('/successful_registration')
 class SuccessfullRegistration(TemplateView):
+    """Страница успешной регистрации"""
     template_name = 'successfull_registration.html'
 
 
 @AppRout('/error_registration')
 class ErrorRegistration(TemplateView):
+    """Страница неудачной регистрации"""
     template_name = 'error_registration.html'
 
 
 @AppRout('/students_list')
 class StudentsLstView(ListView):
+    """Страница со списком студентов"""
     template_name = 'students_list.html'
     model = MapperRegistry.get_current_mapper('student')
 
 
 @AppRout('/student')
 class DetailStudentView(DetailView):
+    """Страница студента"""
     template_name = 'detail_student.html'
     model = MapperRegistry.get_current_mapper('student')

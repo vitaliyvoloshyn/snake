@@ -6,7 +6,7 @@ from snake.views import View
 
 
 class AppRout:
-
+    """Класс-декоратор"""
     def __init__(self, url: str):
         self.url = url
 
@@ -15,6 +15,7 @@ class AppRout:
 
 
 def debug(func):
+    """Декоратор"""
     def wrapper(inst, arg):
         print(f'----------debug----------')
         print(f'Вызвана функция - {func.__name__} {inst}')
