@@ -26,7 +26,6 @@ class Snake:
     def _create_database():
         """Создание БД"""
         create_db()
-        ff = os.path.join(BASE_DIR, DATABASE['name'])
         if not (os.path.exists(os.path.join(BASE_DIR, DATABASE['name']))):
             create_db()
 

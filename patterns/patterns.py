@@ -129,7 +129,7 @@ class CourseFactory:
 
 class Student:
     """Объект студент"""
-    def __init__(self, first_name: str, last_name: str, email: str, phone: str, course: Course, student_id: int = 0):
+    def __init__(self, student_id: int = 0, first_name: str = '', last_name: str = '', email: str = '', phone: str = '', course: Course = None):
         self.student_id = student_id
         self.course = course
         self.phone = phone
@@ -354,63 +354,53 @@ def get_logger(name: str) -> Log:
     return Log(name)
 
 
-class StudentMapper:
-    """Реализует ORM для модели студента.
-    Поддерживаемые методы:
-    - выборка всех значений из таблицы;
-    - выборка по id;
-    - выборка данных по условию;
-    - создание записи в таблице;
-    - редактирование записи в таблице;
-    - удаление записи из таблицы"""
+class Mapper:
+    """Реализует ORM для моделей.
+        Поддерживаемые методы:
+        - выборка всех значений из таблицы;
+        - выборка по id;
+        - выборка данных по условию;
+        - создание записи в таблице;
+        - редактирование записи в таблице;
+        - удаление записи из таблицы"""
+
+    table_name: str = ''
+    entity: object = None
+
     def __init__(self, connection):
         self.connection = connection
         self.cursor = connection.cursor()
-        self.tablename = 'student'
 
-    def all(self) -> List[Student]:
+    def all(self) -> list:
         """Выборка всех значений из таблицы"""
-        statement = f'SELECT * from {self.tablename}'
-        result = []
-        for item in self.cursor.execute(statement).fetchall():
-            id, first_name, last_name, email, phone, course = item
-            course = Engine.get_component_by_name(course)
-            student = Student(first_name, last_name, email, phone, course, id)
+        statement = f'SELECT * from {self.table_name}'
+        return self.cursor.execute(statement).fetchall()
 
-            result.append(student)
-        return result
-
-    def find_by_id(self, id: int) -> List[Student]:
+    def find_by_id(self, id: int) -> list:
         """выборка по id"""
-        statement = f"SELECT * FROM {self.tablename} WHERE id=?"
+        statement = f"SELECT * FROM {self.table_name} WHERE id=?"
         result = self.cursor.execute(statement, (id,)).fetchone()
         if result:
-            id, first_name, last_name, email, phone, course = result
-            course = Engine.get_component_by_name(course)
-            student = Student(first_name, last_name, email, phone, course, id)
-            return student
+            return result
         else:
             raise RecordNotFoundException(f'record with id={id} not found')
 
-    def filter(self, **kwargs) -> List[Student]:
+    def filter(self, **kwargs) -> list:
         """Выборка данных по условию. Принимает словарь - параметр и значение. Принимает только один фильтр"""
         param = list(kwargs.keys())[0]
         value = kwargs.get(param)
-        statement = f"SELECT * FROM {self.tablename} WHERE {param}='{value}'"
+        statement = f"SELECT * FROM {self.table_name} WHERE {param}='{value}'"
         result = self.cursor.execute(statement).fetchone()
         if result:
-            id, first_name, last_name, email, phone, course = result
-            course = Engine.get_component_by_name(course)
-            student = Student(first_name, last_name, email, phone, course, id)
-            return student
+            return result
         else:
-            raise RecordNotFoundException(f'record with id={id} not found')
+            raise RecordNotFoundException(f'record with param {param}: {value} not found')
 
-    def insert(self, obj: Student) -> None:
+    def insert(self, *args) -> None:
         """Создание записи в таблице"""
-        statement = f"INSERT INTO {self.tablename} (first_name, last_name, email, phone, course)" \
-                    f"VALUES (?,?,?,?,?)"
-        self.cursor.execute(statement, (obj.first_name, obj.last_name, obj.email, obj.phone, obj.course.name))
+        statement = f"INSERT INTO {self.table_name} " \
+                    f"VALUES (?,?,?,?,?,?)"
+        self.cursor.execute(statement, args)
         try:
             self.connection.commit()
         except Exception as e:
@@ -418,7 +408,7 @@ class StudentMapper:
 
     def update(self, obj_id: int, obj: Student) -> None:
         """Редактирование записи в таблице"""
-        statement = f"UPDATE {self.tablename} SET first_name=?, last_name=?, email=?, phone=?, course=? Where id=?"
+        statement = f"UPDATE {self.table_name} SET first_name=?, last_name=?, email=?, phone=?, course=? Where id=?"
 
         self.cursor.execute(statement, (obj.first_name, obj.last_name, obj.email, obj.phone, obj.course.name, obj_id))
         try:
@@ -428,12 +418,24 @@ class StudentMapper:
 
     def delete(self, id: int):
         """Удаление записи из таблицы"""
-        statement = f"DELETE FROM {self.tablename} WHERE id={id}"
+        statement = f"DELETE FROM {self.table_name} WHERE id={id}"
         self.cursor.execute(statement)
         try:
             self.connection.commit()
         except Exception as e:
             raise DbDeleteException(e.args)
+
+    def _create_object_instance(self, *args):
+        """Создает инстанс сущности объекта"""
+        return self.entity(args)
+
+
+class StudentMapper(Mapper):
+    """Реализует ORM для модели студента.
+    """
+    table_name = 'student'
+
+
 
 def get_connection():
     """"""
@@ -478,4 +480,6 @@ class RecordNotFoundException(Exception):
 
 
 if __name__ == '__main__':
-    engine = Engine()
+    mod = MapperRegistry.get_current_mapper('student')
+    res = mod.all()
+    print(res)
