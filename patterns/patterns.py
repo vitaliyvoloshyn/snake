@@ -367,9 +367,14 @@ class Mapper:
     table_name: str = ''
     entity: object = None
 
-    def __init__(self, connection):
+    def __init__(self, connection, table_name: str):
         self.connection = connection
         self.cursor = connection.cursor()
+        self.set_table_name(table_name)
+
+    def set_table_name(self, name: str) -> None:
+        """Устанавливает имя таблицы БД"""
+        self.table_name = name
 
     def all(self) -> list:
         """Выборка всех значений из таблицы"""
