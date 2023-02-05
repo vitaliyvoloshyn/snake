@@ -9,7 +9,8 @@
         <p><label for="course_name">Добавить подкатегорию</label></p>
         <div style="margin-bottom: 5rem;">
             <input type="hidden" name="operation" value="add_subcategory">
-            <input type="hidden" name="parent_category" value="{{ category.name }}">
+            <input type="hidden" name="parent_category" value="{{ category.categoryId }}">
+            <input type="hidden" name="image" value="null">
             <input type="text" id="subcategory_name" name="subcategory_name">
             <input type="submit" value="Добавить">
         </div>
@@ -19,11 +20,11 @@
         <p><label for="course_name">Добавить курс</label></p>
         <div style="margin-bottom: 5rem;">
             <input type="hidden" name="operation" value="add_course">
-            <input type="hidden" name="parent_category" value="{{ category.name }}">
+            <input type="hidden" name="parent_category" value="{{ category.categoryId }}">
             <input type="text" id="course_name" name="course_name">
             <select name="course_type" size="1">
                 {% for course_type in courses_types %}
-                <option selected value="{{ course_type }}">{{ course_type }}</option>
+                <option selected value="{{ course_type.coursetypeId }}">{{ course_type.name }}</option>
                 {% endfor %}
             </select>
             <input type="submit" value="Добавить">
@@ -33,10 +34,10 @@
     {% for subcategory in subcategories %}
         <p>
             <strong style="color: #ff6600;">
-                <a href="{{ url }}/learncook/category?name={{ subcategory.name }}">{{ subcategory.name }}</a>
+                <a href="{{ url }}/learncook/category?id={{ subcategory.categoryId }}">{{ subcategory.name }}</a>
             </strong>
-            Подкатегорий : <strong>{{ subcategory.subcategories_count() }}</strong>
-            Курсов : <strong>{{ subcategory.course_count() }}</strong>
+            Подкатегорий : <strong>{{ subcategories_count(subcategory.categoryId) }}</strong>
+            Курсов : <strong>{{ courses_count(subcategory.categoryId) }}</strong>
         </p>
     {% endfor %}
 
@@ -45,17 +46,19 @@
     <p><strong style="color: #ff6600;">
         {{ course.name }}
     </strong>
-        формат: <strong>{{ course }}</strong>
+        формат: <strong>{{ course_type(course.coursetype_id).name }}</strong>
     <form action="" method="post">
         <input type="hidden" name="operation" value="clone_course">
-        <input type="hidden" name="parent_category" value="{{ category.name }}">
+        <input type="hidden" name="course_type" value="{{ course_type(course.coursetype_id).coursetypeId }}">
         <input type="hidden" name="course_name" value="{{ course.name }}">
+        <input type="hidden" name="parent_category" value="{{ course.category_id }}">
+
         <input type="submit" value="Копировать курс">
     </form>
     <form action="" method="post">
         <input type="hidden" name="operation" value="notify">
-        <input type="hidden" name="parent_category" value="{{ category.name }}">
-        <input type="hidden" name="course_name" value="{{ course.name }}">
+        <input type="hidden" name="parent_category" value="{{ course.category_id }}">
+        <input type="hidden" name="course_id" value="{{ course.courseId }}">
         <input type="submit" value="Уведомить студентов об изменении в курсе">
     </form>
     </p>

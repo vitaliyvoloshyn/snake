@@ -72,7 +72,6 @@ class ResponseHTML(Response):
                          headers=headers,
                          )
         if template_name:
-
             self._set_body(self._get_template_as_string(template_name, context))
         else:
             self._set_body(body)

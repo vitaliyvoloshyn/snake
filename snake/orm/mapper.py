@@ -70,8 +70,8 @@ class Mapper:
 
     def insert(self, *args) -> None:
         """Создание записи в таблице"""
-        statement = f"INSERT INTO {self.model.table_name} {self.model_attr} " \
-                    f"VALUES {args}"
+        statement = f"INSERT INTO {self.model.table_name} ({', '.join(self.model_attr)}) " \
+                    f"VALUES {args if len(args)>1 else '(' + chr(34) + args[0] + chr(34) + ')'}"
         print(statement)
         self.cursor.execute(statement)
         try:

@@ -1,6 +1,6 @@
 import os
 
-from models import create_start_categories, queue_
+from models import create_start_categories, create_start_course_types, queue_
 
 
 
@@ -14,6 +14,7 @@ def create_table(connection) -> None:
     for model in queue_:
         cur.execute(model().get_sql_query_create_table())
     create_start_categories()
+    create_start_course_types()
     cur.close()
 
 

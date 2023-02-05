@@ -54,7 +54,7 @@ class ListView(TemplateView):
     queryset = []
 
     def get_queryset(self) -> list:
-        self.queryset = self.model.all()
+        self.queryset = self.model().objects.all()
         return self.queryset
 
     def get_context(self) -> dict:
@@ -66,11 +66,8 @@ class DetailView(ListView):
     context_object_name = 'object'
     object_id: int = 0
 
-    def __init__(self):
-        super().__init__()
-
     def get_queryset(self) -> list:
-        self.queryset = self.model.find_by_id(self.object_id)
+        self.queryset = self.model().objects.find_by_id(self.object_id)
         return self.queryset
 
     def get_context(self) -> dict:
@@ -85,6 +82,6 @@ class DetailView(ListView):
 
     @staticmethod
     def _get_object_id(request: Request) -> int:
-        id_ = request.GET.get('id', 0)
+        id_ = request.GET.get('id')
         return id_[0] if id_ else 0
 

@@ -12,6 +12,12 @@ def create_start_categories():
     for el in start_categories:
         Category().objects.insert(*el)
 
+def create_start_course_types():
+    print('create types')
+    types = ['online', 'record', 'live']
+    for type_ in types:
+        CourseType().objects.insert(type_)
+
 
 class Category(Models):
     name = CharField()

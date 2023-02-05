@@ -1,160 +1,21 @@
 from __future__ import annotations
 
-import os.path
 from abc import ABC, abstractmethod
-from copy import deepcopy
-from dataclasses import dataclass
-from typing import List, Union, Tuple
-
-# from settings import DATABASE, BASE_DIR
-# from snake.create_db import models_classes, get_attr_class
-from snake.exeptions import NotUniqueEmail
-
-
-class Component(ABC):
-    """Интерфейс для категорий и курсов"""
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def __repr__(self):
-        return f'<Component {self.__class__.__name__} {self.name}>'
-
-
-class Category(Component):
-    """Объект категории"""
-    categories: List[Category] = []
-
-    def __init__(self, name: str, path_img: str = ''):
-        super().__init__(name)
-        self.path_img = path_img
-        self.parent = None
-        self.children: List[Component] = []
-        self.course_count = self.course_count
-
-    @staticmethod
-    def create(name: str, parent_category: Category = None, path_img: str = '') -> Category:
-        """Создание категории. Возвращает экземпляр класса Category"""
-        category = Category(name, path_img)
-        if parent_category:
-            category.parent = parent_category
-            parent_category.children.append(category)
-        return category
-
-    def course_count(self) -> int:
-        """Возвращает количество курсов в категории из своего списка дочерних элементов.
-        Курсы дочерних подкатегорий не учитываются"""
-        course_count = 0
-        for child in self.children:
-            if isinstance(child, Course):
-                course_count += 1
-        return course_count
-
-    def subcategories_count(self) -> int:
-        """Возвращает количество подкатегорий в категории из своего списка дочерних элементов.
-        Подкатегории дочерних подкатегорий не учитываются"""
-        subcategories_count = 0
-        for child in self.children:
-            if isinstance(child, Category):
-                subcategories_count += 1
-        return subcategories_count
-
-
-class CourseCopy:
-    """Класс, реализующий паттерн Прототип."""
-    def clone(self):
-        """Копирует объект и возвращает копию"""
-        copy_course = deepcopy(self)
-        return copy_course
-
-
-class Course(Component, CourseCopy):
-    """Объект Курса"""
-    def __init__(self, name: str, parent_category: Category):
-        super().__init__(name)
-        self.parent = parent_category
-        self.parent.children.append(self)
-        self.observers: List[Student] = []
-
-    def add_observer(self, observer: Student) -> None:
-        """Добавление подписчика (студента)"""
-        self.observers.append(observer)
-
-    def send_notification(self, notifier: Tuple[Notifier]) -> None:
-        """Информирование подписчиков курса"""
-        for observer in self.observers:
-            observer.student_notify(notifier)
-
-
-class RecordCourse(Course):
-    """класс курса в записи"""
-    type: str = 'В записи'
-
-    def __init__(self, name: str, parent_category: Category):
-        super().__init__(name, parent_category)
-
-
-class OnlineCourse(Course):
-    """класс курса в записи"""
-
-    type: str = 'Онлайн'
-
-    def __str__(self):
-        return 'Онлайн'
-
-
-class LiveCourse(Course):
-    """класс курса вживую"""
-    type: str = 'Вживую'
-
-    def __str__(self):
-        return 'Вживую'
-
-
-@dataclass
-class CoursesTypes:
-    """Датакласс, хранящий типы курсов"""
-    online: Course = OnlineCourse
-    record: Course = RecordCourse
-    live: Course = LiveCourse
-
-
-class CourseFactory:
-    """Фабрика для создания курсов"""
-    @staticmethod
-    def create(type_: Course, name: str, parent_category: Category) -> Course:
-        """Фабричный метод. Возвращает экземпляр объекта Course"""
-        return type_(name, parent_category)
-
-
-class Student:
-    """Объект студент"""
-    def __init__(self, student_id: int = 0, first_name: str = '', last_name: str = '', email: str = '', phone: str = '', course: Course = None):
-        self.student_id = student_id
-        self.course = course
-        self.phone = phone
-        self.email = email
-        self.last_name = last_name
-        self.first_name = first_name
-
-    def student_notify(self, notifier: Tuple[Notifier]) -> None:
-        """Информирование студентов"""
-        for ntfr in notifier:
-            ntfr.notify(self)
 
 
 class Notifier(ABC):
     """Абстрактный класс уведомителя"""
     @classmethod
     @abstractmethod
-    def notify(cls, student: Student):
+    def notify(cls, student):
         pass
 
 
 class EmailNotifier(Notifier):
     """Уведомитель по электронной почте"""
+
     @classmethod
-    def notify(cls, student: Student):
+    def notify(cls, student):
         """Функция уведомления"""
         print(
             f'Отправлено уведомление студенту {student.last_name} {student.first_name} на электронный адрес {student.email}')
@@ -162,127 +23,11 @@ class EmailNotifier(Notifier):
 
 class PhoneNotifier(Notifier):
     """Уведомитель по телефону (смс)"""
+
     @classmethod
-    def notify(cls, student: Student):
+    def notify(cls, student):
         """Функция уведомления"""
         print(f'Отправлено уведомление студенту {student.last_name} {student.first_name} на телефон {student.phone}')
-
-
-class Engine:
-    """Реализует API по созданию категорий, курсов, студентов"""
-    _category_list: List[Category] = []
-    _students_list: List[Student] = []
-    _courses_list: List[Course] = []
-    start_categories = [
-        ['Кулинарные курсы', 'img/kulinarnie_kursy.jpg'],
-        ['Кондитерские курсы', 'img/konditerskie_kursi.jpg'],
-        ['Мастер-классы', 'img/master-class.jpg']
-    ]
-
-    def __init__(self):
-        self.create_start_categories()
-
-    def create_start_categories(self):
-        """Создание тестовых категорий при инициализации объекта Engine"""
-        for cat in Engine.start_categories:
-            self.create_category(cat[0], path_img=cat[1])
-
-    def create_category(self, name: str, parent_category: Category = None, path_img: str = '') -> Category:
-        """Создание категории"""
-        category = Category.create(name, parent_category, path_img)
-        self._add_to_category_list(category)
-        return category
-
-    def create_course(self, type_: Course, name: str, parent_category: Category) -> Course:
-        """Создание курса"""
-        course = CourseFactory.create(type_, name, parent_category)
-        self._add_to_courses_list(course)
-        return course
-
-    def clone_course(self, course: Course):
-        """Копирование существующего курса"""
-        new_course = course.clone()
-        course.parent.children.append(new_course)
-        self._add_to_courses_list(new_course)
-
-    def create_student(self, first_name: str, last_name: str, email: str, phone: str, course: Course) -> Student:
-        """Создание студента"""
-        if self._validate_email(email):
-            student = Student(first_name, last_name, email, phone, course)
-            course.add_observer(student)
-            self._add_to_student_list(student)
-            # mapper = MapperRegistry.get_current_mapper('student')
-            # mapper.insert(student)
-            return student
-
-    @classmethod
-    def _add_to_category_list(cls, category: Category) -> None:
-        """Добавляет категорию в список категорий"""
-        cls._category_list.append(category)
-
-    @classmethod
-    def _add_to_courses_list(cls, course: Course) -> None:
-        """Добавляет курс в список курсов"""
-        cls._courses_list.append(course)
-
-    @classmethod
-    def _add_to_student_list(cls, student: Student) -> None:
-        """Добавляет студента в список студентов"""
-        cls._students_list.append(student)
-
-    @classmethod
-    def get_categories(cls) -> List[Category]:
-        """Возвращает список категорий"""
-        return cls._category_list
-
-    @classmethod
-    def get_categories_without_parents(cls) -> List[Category]:
-        """Возвращает список категорий, не имеющих родителей"""
-        return list(filter(lambda x: x.parent is None, cls._category_list))
-
-    @classmethod
-    def get_students(cls, course: Course = None) -> List[Student]:
-        """Возвращает список студентов"""
-        if course:
-            return list(filter(lambda x: x.course is course, cls._students_list))
-        return cls._students_list
-
-    @classmethod
-    def count_students(cls, course: Course = None) -> int:
-        """Возвращает количество студентов на курсе"""
-        cnt = len(cls.get_students(course))
-        return cnt
-
-    @classmethod
-    def get_student_by_email(cls, email: str) -> Union[Student, None]:
-        """Возвращает объект студента по email"""
-        for student in cls._students_list:
-            if student.email == email:
-                return student
-        return None
-
-    @classmethod
-    def _validate_email(cls, email: str) -> bool:
-        """Проверка уникальности email при регистрации нового пользователя"""
-        if cls.get_student_by_email(email):
-            raise NotUniqueEmail(f'Пользователь с электронным адресом {email} уже зарегистрирован')
-        return True
-
-    @classmethod
-    def get_courses(cls) -> List[Union[Course, None]]:
-        """Возвращает список всех созданных курсов"""
-        return cls._courses_list
-
-    @classmethod
-    def get_component_by_name(cls, name: str) -> Union[Component, None]:
-        """Возвращает категорию или курс по имени компонента"""
-        for category in cls._category_list:
-            if category.name == name:
-                return category
-        for course in cls._courses_list:
-            if course.name == name:
-                return course
-        return None
 
 
 class Handler:
@@ -352,27 +97,3 @@ class Log:
 def get_logger(name: str) -> Log:
     """Возвращает объект логгера"""
     return Log(name)
-
-
-
-# архитектурный системный паттерн - Data Mapper
-# class MapperRegistry:
-#     """Регистр для мапперов различных моделей"""
-#     mappers = {
-#         'student': StudentMapper,
-#     }
-#
-#     @staticmethod
-#     def get_current_mapper(name: str) -> StudentMapper:
-#         """Возвращает маппер по имени"""
-#         return MapperRegistry.mappers[name](get_connection())
-
-
-
-
-
-if __name__ == '__main__':
-    pass
-    # mod = MapperRegistry.get_current_mapper('student')
-    # res = mod.all()
-    # print(res)

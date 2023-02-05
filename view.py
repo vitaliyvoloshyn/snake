@@ -1,15 +1,19 @@
 from datetime import datetime
-from typing import List, Union
+from sqlite3 import IntegrityError
 
-from models import Category
-# from patterns.patterns import Engine, CoursesTypes, Course, Category, EmailNotifier, PhoneNotifier
+from models import Category, Course, CourseType, Student
+from patterns.patterns import EmailNotifier, PhoneNotifier
 from patterns.structural_patterns import AppRout, debug
-from snake.exeptions import NotUniqueEmail
+from snake.orm.exception import RecordNotFoundException
 from snake.request import Request
 from snake.response import Response, ResponceRedirect
 from snake.views import TemplateView, ListView, DetailView
 
-# site = Engine()
+
+def create_category(name: str, image: str, parent_category: int) -> None:
+    """Создание новой категории"""
+    parent_category = parent_category if parent_category else 'null'
+    Category().objects.insert(name, image, parent_category)
 
 
 @AppRout('')
@@ -37,7 +41,7 @@ class LearnCookPageView(TemplateView):
             dct['id'] = cat.categoryId
             dct['path_img'] = cat.image
             dct['subcategories'] = len(Category().objects.filter(category_id=cat.categoryId))
-            dct['courses'] = 0
+            dct['courses'] = len(Course().objects.filter(category_id=cat.categoryId))
             lst.append(dct)
 
         context['category'] = lst
@@ -46,7 +50,9 @@ class LearnCookPageView(TemplateView):
     @debug
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         cat = request.POST.get('category')[0]
-        Category().objects.insert(cat, 'null', 'null')
+        image = request.POST.get('image')[0]
+        parent_category = int(request.POST.get('parent', 0)[0])
+        create_category(cat, image, parent_category)
         return ResponceRedirect(to='/learncook', )
 
 
@@ -57,59 +63,57 @@ class DetailCategoryView(TemplateView):
 
     @debug
     def get(self, request: Request = None, *args, **kwargs) -> Response:
-        category_id = request.GET.get('id')[0]
-        if category_id is None:
-            raise Exception('Не указано имя категории')
-        self.category = Category().objects.find_by_id(category_id)
+        try:
+            category_id = request.GET.get('id', None)[0]
+            self.category = Category().objects.find_by_id(category_id)
+        except (RecordNotFoundException, TypeError):
+            return Response('404 NOT FOUND', body=b'404 NOT FOUND')
         self.context = self.get_context()
         return super().get(request)
+
+    @staticmethod
+    def subcategories_count(category_id):
+        return len(Category().objects.filter(category_id=category_id))
+
+    @staticmethod
+    def courses_count(category_id):
+        return len(Course().objects.filter(category_id=category_id))
+
+    @staticmethod
+    def get_course_type(course_id):
+        return CourseType().objects.find_by_id(course_id)
 
     def get_context(self) -> dict:
         context = super().get_context()
         context['category'] = self.category
         context['subcategories'] = Category().objects.filter(category_id=self.category.categoryId)
-        # context['courses'] = self._get_child_courses(self.parent_category)
-        # context['courses_types'] = list(CoursesTypes().__dict__.keys())
+        context['subcategories_count'] = self.subcategories_count
+        context['courses_count'] = self.courses_count
+        context['courses'] = Course().objects.filter(category_id=self.category.categoryId)
+        context['courses_types'] = CourseType().objects.all()
+        context['course_type'] = self.get_course_type
         return context
+
 
     @debug
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         operation = request.POST.get('operation')[0]
-        self.parent_category = self._get_parent_category(request.POST.get('parent_category')[0])
+        parent_id = request.POST.get('parent_category')[0]
         if operation == 'add_subcategory':
             new_category = request.POST.get('subcategory_name')[0]
-            # site.create_category(name=new_category, parent_category=self.parent_category)
-        elif operation == 'add_course':
+            image = request.POST.get('image')[0]
+            create_category(name=new_category, image=image, parent_category=parent_id)
+        elif operation == 'add_course' or operation == 'clone_course':
             new_course = request.POST.get('course_name')[0]
-            # course_type = getattr(CoursesTypes, request.POST.get('course_type')[0])
-            # site.create_course(type_=course_type, name=new_course, parent_category=self.parent_category)
-
-        elif operation == 'clone_course':
-            # new_course = site.get_component_by_name(request.POST.get('course_name')[0])
-            # site.clone_course(new_course)
-            pass
-
+            type_ = request.POST.get('course_type')[0]
+            Course().objects.insert(new_course, parent_id, type_)
         elif operation == 'notify':
-            # course = site.get_component_by_name(request.POST.get('course_name')[0])
-            # course.send_notification((EmailNotifier, PhoneNotifier))
-            pass
+            course_id = request.POST.get('course_id')[0]
+            for student in Student().objects.filter(course_id=course_id):
+                EmailNotifier.notify(student)
+                PhoneNotifier.notify(student)
         query = request.GET.get('raw_query_string')
         return ResponceRedirect(to=f'/learncook/category?{query}')
-
-
-
-
-
-    @staticmethod
-    def _get_child_categories(parent_category: Category) -> List[Union[Category, None]]:
-        child_categories = list(filter(lambda x: isinstance(x, Category), parent_category.children))
-        return child_categories
-
-    # @staticmethod
-    # def _get_child_courses(parent_category: Category) -> List[Union[Course, None]]:
-    #     child_courses = list(filter(lambda x: isinstance(x, Course), parent_category.children))
-    #     return child_courses
-
 
 @AppRout('/developer')
 class DeveloperPageView(TemplateView):
@@ -170,7 +174,7 @@ class Registration(TemplateView):
 
     def get_context(self) -> dict:
         context = super().get_context()
-        # context['courses'] = site.get_courses()
+        context['courses'] = Course().objects.all()
         return context
 
     @debug
@@ -178,23 +182,18 @@ class Registration(TemplateView):
         try:
             self._create_student(request)
             return ResponceRedirect(to='/successful_registration')
-        except NotUniqueEmail as err:
-            return ResponceRedirect(to='/error_registration', context={'message': f'{err}'})
+        except IntegrityError as err:
+            error_message = 'This email address is already registered'
+            return ResponceRedirect(to=f'/error_registration?message={error_message}')
 
-    # @staticmethod
-    # def _create_student(request: Request) -> bool:
-    #     f_n = request.POST.get('first_name')[0]
-    #     l_n = request.POST.get('last_name')[0]
-    #     email = request.POST.get('email')[0]
-    #     phone = request.POST.get('phone')[0]
-    #     Student().objects.insert()
-    #     course = site.get_component_by_name(request.POST.get('course')[0])
-    #     site.create_student(first_name=f_n,
-    #                         last_name=l_n,
-    #                         email=email,
-    #                         phone=phone,
-    #                         course=course)
-    #     return True
+    @staticmethod
+    def _create_student(request: Request):
+        f_n = request.POST.get('first_name')[0]
+        l_n = request.POST.get('last_name')[0]
+        email = request.POST.get('email')[0]
+        phone = request.POST.get('phone')[0]
+        course = request.POST.get('course')[0]
+        Student().objects.insert(f_n, l_n, email, phone, course)
 
 
 @AppRout('/successful_registration')
@@ -202,22 +201,45 @@ class SuccessfullRegistration(TemplateView):
     """Страница успешной регистрации"""
     template_name = 'successfull_registration.html'
 
+error_message = ''
 
 @AppRout('/error_registration')
 class ErrorRegistration(TemplateView):
     """Страница неудачной регистрации"""
     template_name = 'error_registration.html'
+    context = {'message': error_message}
+
+    def get(self, request: Request = None, *args, **kwargs) -> Response:
+        self.message = request.GET.get('message')[0]
+        return super().get(request, *args, **kwargs)
+
+    def get_context(self) -> dict:
+        return {'message': self.message}
 
 
-# @AppRout('/students_list')
-# class StudentsLstView(ListView):
-#     """Страница со списком студентов"""
-#     template_name = 'students_list.html'
-#     model = Student
-#
-#
-# @AppRout('/student')
-# class DetailStudentView(DetailView):
-#     """Страница студента"""
-#     template_name = 'detail_student.html'
-#     model = Student
+
+@AppRout('/students_list')
+class StudentsLstView(ListView):
+    """Страница со списком студентов"""
+    template_name = 'students_list.html'
+    model = Student
+
+
+@AppRout('/student')
+class DetailStudentView(DetailView):
+    """Страница студента"""
+    template_name = 'detail_student.html'
+    model = Student
+
+    def get_context(self) -> dict:
+        context = super().get_context()
+        course = self._get_course(context[self.context_object_name].course_id)
+        context['course'] = course
+        print(context)
+
+        return context
+
+    def _get_course(self, course_id: int):
+        print(course_id)
+        return Course().objects.find_by_id(course_id)
+

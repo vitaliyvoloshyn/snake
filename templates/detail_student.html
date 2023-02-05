@@ -2,7 +2,7 @@
 
 {% block content %}
 <section id="about" class="tm-section">
-    <h1>Студент: <strong>{{ object[2] }} {{ object[1] }}</strong></h1>
+    <h1>Студент: <strong>{{ object.first_name }} {{ object.last_name }}</strong></h1>
     <table class="table">
         <thead>
         <tr>
@@ -17,11 +17,11 @@
         <tbody>
         <tr>
             <th scope="row">1</th>
-            <td>{{ object[1] }}</td>
-            <td>{{ object[2] }}</td>
-            <td>{{ object[3] }}</td>
-            <td>{{ object[4] }}</td>
-            <td>{{ object[5] }}</td>
+            <td>{{ object.first_name }}</td>
+            <td>{{ object.last_name }}</td>
+            <td>{{ object.email }}</td>
+            <td>{{ object.phone }}</td>
+            <td>{{ course.name }}</td>
         </tr>
         </tbody>
     </table>

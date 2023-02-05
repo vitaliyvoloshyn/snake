@@ -13,4 +13,5 @@ def get_connection():
         connection = connect(DB_FILE)
         create_table(connection)
         connection.close()
+        print('Файл базы данных создан')
     return connect(DB_FILE)

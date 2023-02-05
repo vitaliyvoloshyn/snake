@@ -28,7 +28,7 @@
         <label for="InputCourse" class="form-label">Курс</label>
         <select id="InputCourse" name="course" required class="form-control">
             {% for course in courses %}
-            <option value="{{ course.name }}">{{ course.name }}</option>
+            <option value="{{ course.courseId }}">{{ course.name }}</option>
             {% endfor %}
         </select>
     </div>
