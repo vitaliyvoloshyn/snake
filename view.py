@@ -1,15 +1,15 @@
 from datetime import datetime
 from typing import List, Union
 
-from patterns.patterns import Engine, CoursesTypes, Course, Category, EmailNotifier, PhoneNotifier, StudentMapper, \
-    MapperRegistry
+from models import Category
+# from patterns.patterns import Engine, CoursesTypes, Course, Category, EmailNotifier, PhoneNotifier
 from patterns.structural_patterns import AppRout, debug
 from snake.exeptions import NotUniqueEmail
 from snake.request import Request
 from snake.response import Response, ResponceRedirect
 from snake.views import TemplateView, ListView, DetailView
 
-site = Engine()
+# site = Engine()
 
 
 @AppRout('')
@@ -30,13 +30,23 @@ class LearnCookPageView(TemplateView):
 
     def get_context(self) -> dict:
         context = super().get_context()
-        context['category'] = site.get_categories_without_parents()
+        lst = []
+        for cat in Category().objects.filter(category_id='null'):
+            dct = {}
+            dct['name'] = cat.name
+            dct['id'] = cat.categoryId
+            dct['path_img'] = cat.image
+            dct['subcategories'] = len(Category().objects.filter(category_id=cat.categoryId))
+            dct['courses'] = 0
+            lst.append(dct)
+
+        context['category'] = lst
         return context
 
     @debug
     def post(self, request: Request = None, *args, **kwargs) -> Response:
         cat = request.POST.get('category')[0]
-        site.create_category(name=cat)
+        Category().objects.insert(cat, 'null', 'null')
         return ResponceRedirect(to='/learncook', )
 
 
@@ -47,11 +57,20 @@ class DetailCategoryView(TemplateView):
 
     @debug
     def get(self, request: Request = None, *args, **kwargs) -> Response:
-        self.parent_category = self._get_parent_category(request.GET.get('name')[0])
-        if self.parent_category is None:
+        category_id = request.GET.get('id')[0]
+        if category_id is None:
             raise Exception('Не указано имя категории')
+        self.category = Category().objects.find_by_id(category_id)
         self.context = self.get_context()
         return super().get(request)
+
+    def get_context(self) -> dict:
+        context = super().get_context()
+        context['category'] = self.category
+        context['subcategories'] = Category().objects.filter(category_id=self.category.categoryId)
+        # context['courses'] = self._get_child_courses(self.parent_category)
+        # context['courses_types'] = list(CoursesTypes().__dict__.keys())
+        return context
 
     @debug
     def post(self, request: Request = None, *args, **kwargs) -> Response:
@@ -59,43 +78,37 @@ class DetailCategoryView(TemplateView):
         self.parent_category = self._get_parent_category(request.POST.get('parent_category')[0])
         if operation == 'add_subcategory':
             new_category = request.POST.get('subcategory_name')[0]
-            site.create_category(name=new_category, parent_category=self.parent_category)
+            # site.create_category(name=new_category, parent_category=self.parent_category)
         elif operation == 'add_course':
             new_course = request.POST.get('course_name')[0]
-            course_type = getattr(CoursesTypes, request.POST.get('course_type')[0])
-            site.create_course(type_=course_type, name=new_course, parent_category=self.parent_category)
+            # course_type = getattr(CoursesTypes, request.POST.get('course_type')[0])
+            # site.create_course(type_=course_type, name=new_course, parent_category=self.parent_category)
 
         elif operation == 'clone_course':
-            new_course = site.get_component_by_name(request.POST.get('course_name')[0])
-            site.clone_course(new_course)
+            # new_course = site.get_component_by_name(request.POST.get('course_name')[0])
+            # site.clone_course(new_course)
+            pass
 
         elif operation == 'notify':
-            course = site.get_component_by_name(request.POST.get('course_name')[0])
-            course.send_notification((EmailNotifier, PhoneNotifier))
+            # course = site.get_component_by_name(request.POST.get('course_name')[0])
+            # course.send_notification((EmailNotifier, PhoneNotifier))
+            pass
         query = request.GET.get('raw_query_string')
         return ResponceRedirect(to=f'/learncook/category?{query}')
 
-    @staticmethod
-    def _get_parent_category(category_name: str) -> Category:
-        return site.get_component_by_name(category_name)
 
-    def get_context(self) -> dict:
-        context = super().get_context()
-        context['category'] = self.parent_category
-        context['subcategories'] = self._get_child_categories(self.parent_category)
-        context['courses'] = self._get_child_courses(self.parent_category)
-        context['courses_types'] = list(CoursesTypes().__dict__.keys())
-        return context
+
+
 
     @staticmethod
     def _get_child_categories(parent_category: Category) -> List[Union[Category, None]]:
         child_categories = list(filter(lambda x: isinstance(x, Category), parent_category.children))
         return child_categories
 
-    @staticmethod
-    def _get_child_courses(parent_category: Category) -> List[Union[Course, None]]:
-        child_courses = list(filter(lambda x: isinstance(x, Course), parent_category.children))
-        return child_courses
+    # @staticmethod
+    # def _get_child_courses(parent_category: Category) -> List[Union[Course, None]]:
+    #     child_courses = list(filter(lambda x: isinstance(x, Course), parent_category.children))
+    #     return child_courses
 
 
 @AppRout('/developer')
@@ -157,7 +170,7 @@ class Registration(TemplateView):
 
     def get_context(self) -> dict:
         context = super().get_context()
-        context['courses'] = site.get_courses()
+        # context['courses'] = site.get_courses()
         return context
 
     @debug
@@ -168,19 +181,20 @@ class Registration(TemplateView):
         except NotUniqueEmail as err:
             return ResponceRedirect(to='/error_registration', context={'message': f'{err}'})
 
-    @staticmethod
-    def _create_student(request: Request) -> bool:
-        f_n = request.POST.get('first_name')[0]
-        l_n = request.POST.get('last_name')[0]
-        email = request.POST.get('email')[0]
-        phone = request.POST.get('phone')[0]
-        course = site.get_component_by_name(request.POST.get('course')[0])
-        site.create_student(first_name=f_n,
-                            last_name=l_n,
-                            email=email,
-                            phone=phone,
-                            course=course)
-        return True
+    # @staticmethod
+    # def _create_student(request: Request) -> bool:
+    #     f_n = request.POST.get('first_name')[0]
+    #     l_n = request.POST.get('last_name')[0]
+    #     email = request.POST.get('email')[0]
+    #     phone = request.POST.get('phone')[0]
+    #     Student().objects.insert()
+    #     course = site.get_component_by_name(request.POST.get('course')[0])
+    #     site.create_student(first_name=f_n,
+    #                         last_name=l_n,
+    #                         email=email,
+    #                         phone=phone,
+    #                         course=course)
+    #     return True
 
 
 @AppRout('/successful_registration')
@@ -195,15 +209,15 @@ class ErrorRegistration(TemplateView):
     template_name = 'error_registration.html'
 
 
-@AppRout('/students_list')
-class StudentsLstView(ListView):
-    """Страница со списком студентов"""
-    template_name = 'students_list.html'
-    model = MapperRegistry.get_current_mapper('student')
-
-
-@AppRout('/student')
-class DetailStudentView(DetailView):
-    """Страница студента"""
-    template_name = 'detail_student.html'
-    model = MapperRegistry.get_current_mapper('student')
+# @AppRout('/students_list')
+# class StudentsLstView(ListView):
+#     """Страница со списком студентов"""
+#     template_name = 'students_list.html'
+#     model = Student
+#
+#
+# @AppRout('/student')
+# class DetailStudentView(DetailView):
+#     """Страница студента"""
+#     template_name = 'detail_student.html'
+#     model = Student

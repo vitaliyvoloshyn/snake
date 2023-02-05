@@ -3,9 +3,9 @@ import pprint
 from typing import List, Type
 import view
 from settings import BASE_DIR, DATABASE
-from snake.create_db import create_db
 
 from snake.exeptions import NotFound, NotAllowed
+from snake.orm.db import create_table
 from snake.request import Request
 from snake.response import Response, ResponseStatic
 from snake.static import StaticFiles
@@ -15,19 +15,14 @@ from snake.views import NotFound404View, NotAllowed405View
 from snake.views import View
 
 
+
 class Snake:
     __slots__ = ('urls', 'view', 'request', 'response', 'static_files', 'input_post_data')
 
     def __init__(self):
         self.urls = urlpatterns
-        self._create_database()
 
-    @staticmethod
-    def _create_database():
-        """Создание БД"""
-        create_db()
-        if not (os.path.exists(os.path.join(BASE_DIR, DATABASE['name']))):
-            create_db()
+
 
     def __call__(self, environ: dict, start_response):
         # pprint.pprint(environ)

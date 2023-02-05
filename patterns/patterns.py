@@ -4,10 +4,10 @@ import os.path
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
-from sqlite3 import connect
 from typing import List, Union, Tuple
 
-from settings import DATABASE, BASE_DIR
+# from settings import DATABASE, BASE_DIR
+# from snake.create_db import models_classes, get_attr_class
 from snake.exeptions import NotUniqueEmail
 
 
@@ -211,8 +211,8 @@ class Engine:
             student = Student(first_name, last_name, email, phone, course)
             course.add_observer(student)
             self._add_to_student_list(student)
-            mapper = MapperRegistry.get_current_mapper('student')
-            mapper.insert(student)
+            # mapper = MapperRegistry.get_current_mapper('student')
+            # mapper.insert(student)
             return student
 
     @classmethod
@@ -354,137 +354,25 @@ def get_logger(name: str) -> Log:
     return Log(name)
 
 
-class Mapper:
-    """Реализует ORM для моделей.
-        Поддерживаемые методы:
-        - выборка всех значений из таблицы;
-        - выборка по id;
-        - выборка данных по условию;
-        - создание записи в таблице;
-        - редактирование записи в таблице;
-        - удаление записи из таблицы"""
-
-    table_name: str = ''
-    entity: object = None
-
-    def __init__(self, connection, table_name: str):
-        self.connection = connection
-        self.cursor = connection.cursor()
-        self.set_table_name(table_name)
-
-    def set_table_name(self, name: str) -> None:
-        """Устанавливает имя таблицы БД"""
-        self.table_name = name
-
-    def all(self) -> list:
-        """Выборка всех значений из таблицы"""
-        statement = f'SELECT * from {self.table_name}'
-        return self.cursor.execute(statement).fetchall()
-
-    def find_by_id(self, id: int) -> list:
-        """выборка по id"""
-        statement = f"SELECT * FROM {self.table_name} WHERE id=?"
-        result = self.cursor.execute(statement, (id,)).fetchone()
-        if result:
-            return result
-        else:
-            raise RecordNotFoundException(f'record with id={id} not found')
-
-    def filter(self, **kwargs) -> list:
-        """Выборка данных по условию. Принимает словарь - параметр и значение. Принимает только один фильтр"""
-        param = list(kwargs.keys())[0]
-        value = kwargs.get(param)
-        statement = f"SELECT * FROM {self.table_name} WHERE {param}='{value}'"
-        result = self.cursor.execute(statement).fetchone()
-        if result:
-            return result
-        else:
-            raise RecordNotFoundException(f'record with param {param}: {value} not found')
-
-    def insert(self, *args) -> None:
-        """Создание записи в таблице"""
-        statement = f"INSERT INTO {self.table_name} " \
-                    f"VALUES (?,?,?,?,?,?)"
-        self.cursor.execute(statement, args)
-        try:
-            self.connection.commit()
-        except Exception as e:
-            raise DbCommitException(e.args)
-
-    def update(self, obj_id: int, obj: Student) -> None:
-        """Редактирование записи в таблице"""
-        statement = f"UPDATE {self.table_name} SET first_name=?, last_name=?, email=?, phone=?, course=? Where id=?"
-
-        self.cursor.execute(statement, (obj.first_name, obj.last_name, obj.email, obj.phone, obj.course.name, obj_id))
-        try:
-            self.connection.commit()
-        except Exception as e:
-            raise DbUpdateException(e.args)
-
-    def delete(self, id: int):
-        """Удаление записи из таблицы"""
-        statement = f"DELETE FROM {self.table_name} WHERE id={id}"
-        self.cursor.execute(statement)
-        try:
-            self.connection.commit()
-        except Exception as e:
-            raise DbDeleteException(e.args)
-
-    def _create_object_instance(self, *args):
-        """Создает инстанс сущности объекта"""
-        return self.entity(args)
-
-
-class StudentMapper(Mapper):
-    """Реализует ORM для модели студента.
-    """
-    table_name = 'student'
-
-
-
-def get_connection():
-    """"""
-    return connect(os.path.join(BASE_DIR, DATABASE.get('name')))
-
 
 # архитектурный системный паттерн - Data Mapper
-class MapperRegistry:
-    """Регистр для мапперов различных моделей"""
-    mappers = {
-        'student': StudentMapper,
-    }
-
-    @staticmethod
-    def get_current_mapper(name: str) -> StudentMapper:
-        """Возвращает маппер по имени"""
-        return MapperRegistry.mappers[name](get_connection())
-
-
-class DbCommitException(Exception):
-    """Класс, описывающий исключение при операции вставки данных в таблицу"""
-    def __init__(self, message):
-        super().__init__(f'Db commit error: {message}')
+# class MapperRegistry:
+#     """Регистр для мапперов различных моделей"""
+#     mappers = {
+#         'student': StudentMapper,
+#     }
+#
+#     @staticmethod
+#     def get_current_mapper(name: str) -> StudentMapper:
+#         """Возвращает маппер по имени"""
+#         return MapperRegistry.mappers[name](get_connection())
 
 
-class DbUpdateException(Exception):
-    """Класс, описывающий исключение при операции вставки данных в таблицу"""
-    def __init__(self, message):
-        super().__init__(f'Db update error: {message}')
 
-
-class DbDeleteException(Exception):
-    """Класс, описывающий исключение при операции удаления данных из таблицы"""
-    def __init__(self, message):
-        super().__init__(f'Db delete error: {message}')
-
-
-class RecordNotFoundException(Exception):
-    """Класс, описывающий исключение при операции выборки данных из таблицы"""
-    def __init__(self, message):
-        super().__init__(f'Record not found: {message}')
 
 
 if __name__ == '__main__':
-    mod = MapperRegistry.get_current_mapper('student')
-    res = mod.all()
-    print(res)
+    pass
+    # mod = MapperRegistry.get_current_mapper('student')
+    # res = mod.all()
+    # print(res)
